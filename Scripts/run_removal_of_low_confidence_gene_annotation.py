@@ -19,7 +19,7 @@ gff_files = sorted([f for f in os.listdir(args.input_dir) if f.endswith('_annota
 # Run the Python script for each GFF file
 for gff_file in gff_files:
     # Construct the command
-    command = f"python3 {args.script_path} {os.path.join(args.input_dir, gff_file)}"
+    command = f"python3 {args.script_path} {os.path.join(args.input_dir, gff_file)} {args.output_dir}"
 
     # Create a job script
     job_script = f"""#!/bin/bash

@@ -28,25 +28,25 @@ def get_filename_from_path(path):
     return file_name
 
 def filter_sequences(output_dir, gff_file, fasta_file):
-    
+
     # Derive the output filenames from the input filenames
     out_gff_file = os.path.join(output_dir, get_filename_from_path(gff_file) + '_filtered_removed_sequences.gff')
     out_fasta_file = os.path.join(output_dir, get_filename_from_path(fasta_file) + '_filtered_removed_sequences.fasta')
-    
+
     # Create a database from the GFF file
     db = gffutils.create_db(gff_file, dbfn=os.path.splitext(gff_file)[0]+'temp.db', force=True, keep_order=True,
                             merge_strategy='merge', sort_attribute_values=True)
 
     # Get the ids and ranges of the low-quality genes
     low_quality_ids_ranges = [(feature.id, feature.seqid, (feature.start, feature.end))
-                               for feature in db.all_features(order_by='start') 
-                              if feature.featuretype == 'gene_quality' and 'gene_quality' in feature.attributes
+                               for feature in db.all_features(order_by='start')
+                              if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene') and 'gene_quality' in feature.attributes
                               and (feature.attributes['gene_quality'][0] == 'low' or feature.attributes['gene_quality'][0] == 'medium')]
 
 
     # Create a sorted list of all genes
     all_genes = sorted([feature for feature in db.all_features(
-        order_by='start') if feature.featuretype == 'gene_quality'], key=lambda x: x.start)
+        order_by='start') if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene')], key=lambda x: x.start)
 
     # For each low-quality gene, find the upstream and downstream genes
     low_quality_ids_ranges_extended = []
@@ -66,13 +66,19 @@ def filter_sequences(output_dir, gff_file, fasta_file):
                 end_new = end
             low_quality_ids_ranges_extended.append((id, seq_id, (start_new, end_new)))
 
+    # Now, create a sorted list of all features, not just genes
+    all_features = sorted([feature for feature in db.all_features(order_by='start')], key=lambda x: x.start)
+
     # Filter the GFF file
     with open(out_gff_file, 'w') as outfile:
-        for feature in all_genes:
+        for feature in all_features:
             new_start = feature.start
             new_end = feature.end
-            # Do not include low quality genes in the new gff file
-            if feature.id not in [id for id, _, _ in low_quality_ids_ranges_extended]:
+            # Check if the feature is within the extended window of any low-quality gene
+            for id, seq_id, (start, end) in low_quality_ids_ranges_extended:
+                if seq_id == feature.seqid and not (feature.end < start or feature.start > end):
+                    break  # This feature is within the extended window of a low-quality gene
+            else:  # The 'else' clause of a 'for' loop is executed when the loop has exhausted the iterable
                 # adjust the start and end points for the removed sequences
                 for id, seq_id, (start, end) in low_quality_ids_ranges_extended:
                     if feature.start > end and seq_id == feature.seqid:
@@ -80,7 +86,7 @@ def filter_sequences(output_dir, gff_file, fasta_file):
                         new_start -= len_feature
                         new_end -= len_feature
                 feature.start = new_start
-                feature.end = new_end              
+                feature.end = new_end
                 outfile.write(str(feature) + '\n')
 
     # Filter the FASTA file

@@ -51,7 +51,7 @@ def filter_sequences(output_dir, gff_file, fasta_file):
 
     # Get the ids and ranges of the low-quality genes
     all_genes_sorted = sorted([feature for feature in db.all_features(
-        order_by='start') if feature.featuretype == 'gene_quality'], key=lambda x: (x.seqid, x.start))
+        order_by='start') if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene')], key=lambda x: (x.seqid, x.start))
 
     overlapping_gene_ids_ranges = find_overlapping_genes(all_genes_sorted)
     print (overlapping_gene_ids_ranges)
@@ -59,7 +59,7 @@ def filter_sequences(output_dir, gff_file, fasta_file):
     overlapping_gene_ids_ranges_extended = []
     # Create a sorted list of all genes
     all_genes = sorted([feature for feature in db.all_features(
-        order_by='start') if feature.featuretype == 'gene_quality'], key=lambda x: x.start)
+        order_by='start') if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene')], key=lambda x: x.start)
 
     for id, seq_id, (start, end) in overlapping_gene_ids_ranges:
         gene_idx = next(
@@ -77,13 +77,19 @@ def filter_sequences(output_dir, gff_file, fasta_file):
                 end_new = end
             overlapping_gene_ids_ranges_extended.append((id, seq_id, (start_new, end_new)))
     print(overlapping_gene_ids_ranges_extended)
+    # Now, create a sorted list of all features, not just genes
+    all_features = sorted([feature for feature in db.all_features(order_by='start')], key=lambda x: x.start)
+
     # Filter the GFF file
     with open(out_gff_file, 'w') as outfile:
-        for feature in all_genes:
+        for feature in all_features:
             new_start = feature.start
             new_end = feature.end
-            # Do not include low quality genes in the new gff file
-            if feature.id not in [id for id, _, _ in overlapping_gene_ids_ranges_extended]:
+            # Check if the feature is within the extended window of any low-quality gene
+            for id, seq_id, (start, end) in overlapping_gene_ids_ranges_extended:
+                if seq_id == feature.seqid and not (feature.end < start or feature.start > end):
+                    break  # This feature is within the extended window of a low-quality gene
+            else:  # The 'else' clause of a 'for' loop is executed when the loop has exhausted the iterable
                 # adjust the start and end points for the removed sequences
                 for id, seq_id, (start, end) in overlapping_gene_ids_ranges_extended:
                     if feature.start > end and seq_id == feature.seqid:
@@ -91,8 +97,9 @@ def filter_sequences(output_dir, gff_file, fasta_file):
                         new_start -= len_feature
                         new_end -= len_feature
                 feature.start = new_start
-                feature.end = new_end              
+                feature.end = new_end
                 outfile.write(str(feature) + '\n')
+
 
     # Filter the FASTA file
     with open(out_fasta_file, 'w') as outfile:
