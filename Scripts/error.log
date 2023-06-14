@@ -1,0 +1,29 @@
+For ailuropoda_melanoleuca_core_110_2@mysql-ens-sta-1 there is a difference in the software release (109) and the database release (110). You should update one of these to ensure that your script does not crash.
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/get_diamond_coverage.py", line 26, in <module>
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/run_high_confidence_genes_analysis_test.py", line 25, in <module>
+    subprocess.run(command, shell=True)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 505, in run
+    subprocess.run(command, shell=True)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 505, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1146, in communicate
+    stdout, stderr = process.communicate(input, timeout=timeout)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1146, in communicate
+    self.wait()
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1209, in wait
+    self.wait()
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1209, in wait
+    return self._wait(timeout=timeout)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1943, in _wait
+    return self._wait(timeout=timeout)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1943, in _wait
+    (pid, sts) = self._try_wait(0)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1901, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+KeyboardInterrupt
+    (pid, sts) = self._try_wait(0)
+  File "/hps/nobackup/flicek/ensembl/genebuild/frida/conda/miniconda/lib/python3.10/subprocess.py", line 1901, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+KeyboardInterrupt
