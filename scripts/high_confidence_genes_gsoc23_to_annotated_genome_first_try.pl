@@ -13,18 +13,6 @@ my $host;
 my $port;
 my $coord_system = 'toplevel';
 
-#my $dbname = 'caenorhabditis_elegans_core_101_269';
-#my $dbname = 'homo_sapiens_core_101_38';
-#my $dbname = 'mus_musculus_core_101_38';
-#my $dbname = 'pan_paniscus_core_110_1';
-#my $dbname = 'sus_scrofa_core_110_111';
-#my $dbname = 'bos_taurus_core_110_12';
-#my $dbname = 'bos_indicus_hybrid_core_110_1';
-#my $dbname = 'eptatretus_burgeri_core_110_32';
-#my $user = 'ensro';
-#my $host   = 'mysql-ens-vertannot-staging';
-#my $port   = 4573;
-#my $pass;
 
 my $diamond_script_path = "/hps/software/users/ensembl/repositories/fergal/ensembl-common/scripts/get_diamond_coverage.py";
 my $protein_db;
@@ -38,6 +26,11 @@ my $options = GetOptions ("user|dbuser|u=s"       => \$user,
                           "protein_db=s"          => \$protein_db,
                           "output_dir=s"          => \$output_dir);
 
+# Get the input database name
+my ($input_dbname) = ($dbname =~ /([^_]+)_core/);
+$input_dbname ||= $dbname;  # Use full dbname if the extraction fails
+my $gff_output_file = "${input_dbname}_genome_annotations.gff";
+my $csv_output_file = "${input_dbname}_confidence.csv";
 
 # Connect to the Ensembl core db
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -64,6 +57,12 @@ my $transcript_results = {};
 
 # Create an output file for running Diamond
 open(OUT,">".$diamond_input_file_path);
+
+# Create an output file for the GFF annotations
+open(my $gff_out, '>', $gff_output_file) or die "Cannot open $gff_output_file for writing: $!";
+
+# Create an output file for diamond
+open(my $diamond_out, '>', $diamond_output_file_path) or die "Cannot open $diamond_output_file_path for writing: $!";
 
 # Loop through each seq region in the genome (a seq region is a chromosomes or toplevel scaffold)
 foreach my $slice (@$slices) {
@@ -154,7 +153,7 @@ close OUT;
 # a query and target coverage (based clustering hits), the error (a measure of the missing coverage on both query
 # and target) and a score for how good the match was. The score considers the sequence identity (which is lowly
 # weighted) and the coverage (highly weighted)
-my $command = "python ".$diamond_script_path." $diamond_input_file_path $protein_db $diamond_output_file_path";
+my $command = "python3 ".$diamond_script_path." $diamond_input_file_path $protein_db $diamond_output_file_path";
 system($command);
 
 # Load the output from diamond into the hashref
@@ -171,15 +170,22 @@ while (my $row = <$fh>) {
 }
 close $fh;
 
+
 # This is the last step, take all the info and get a confidence rating, put this in the final output file
-open(OUT,">".$final_output_file_path);
-foreach my $transcript_id (keys%{$transcript_results}) {
-  my $output_line = confidence_rating($transcript_results->{$transcript_id});
-  $output_line = $dbname."\t".$host."\t".$port."\t".$output_line;
-  say OUT $output_line;
+open(OUT,">".$csv_output_file);
+foreach my $transcript_id (keys %{$transcript_results}) {
+    my $output_line = confidence_rating($transcript_results->{$transcript_id});
+    $output_line = $dbname."\t".$host."\t".$port."\t".$output_line;
+    say OUT $output_line;
+
+    # Write gene quality annotation to the GFF output file
+    my ($gene_id, $seq_region_name, $seq_region_start, $seq_region_end) = split("\t", $transcript_results->{$transcript_id}->{'gene_info'});
+    my $gene_quality = $transcript_results->{$transcript_id}->{'confidence'};
+    say $gff_out join("\t", $seq_region_name, 'Ensembl', 'gene_quality', $seq_region_start, $seq_region_end, '.', '.', '.', "gene_id=$gene_id;gene_quality=$gene_quality");
 }
 close OUT;
-
+close $gff_out;
+close $diamond_out;
 #use Data::Dumper;
 #print Dumper($transcript_results);
 
@@ -257,3 +263,4 @@ sub intron_check {
 
   return($canonical,$regular_size);
 }
+

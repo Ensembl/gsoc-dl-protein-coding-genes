@@ -13,20 +13,8 @@ my $host;
 my $port;
 my $coord_system = 'toplevel';
 
-#my $dbname = 'caenorhabditis_elegans_core_101_269';
-#my $dbname = 'homo_sapiens_core_101_38';
-#my $dbname = 'mus_musculus_core_101_38';
-#my $dbname = 'pan_paniscus_core_110_1';
-#my $dbname = 'sus_scrofa_core_110_111';
-#my $dbname = 'bos_taurus_core_110_12';
-#my $dbname = 'bos_indicus_hybrid_core_110_1';
-#my $dbname = 'eptatretus_burgeri_core_110_32';
-#my $user = 'ensro';
-#my $host   = 'mysql-ens-vertannot-staging';
-#my $port   = 4573;
-#my $pass;
 
-my $diamond_script_path = "/hps/software/users/ensembl/repositories/fergal/ensembl-common/scripts/get_diamond_coverage.py";
+my $diamond_script_path = "/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/get_diamond_coverage.py";
 my $protein_db;
 my $output_dir;
 
@@ -38,6 +26,15 @@ my $options = GetOptions ("user|dbuser|u=s"       => \$user,
                           "protein_db=s"          => \$protein_db,
                           "output_dir=s"          => \$output_dir);
 
+# Get the input database name
+my ($input_dbname) = ($dbname =~ /([^_]+)_core/);
+$input_dbname ||= $dbname;  # Use full dbname if the extraction fails
+my $gff_output_file = "${output_dir}${input_dbname}_genome_annotations.gff";
+my $csv_output_file = "${output_dir}${input_dbname}_confidence.csv";
+
+# Create an output file for the Fasta annotations
+my $fasta_output_file = "${output_dir}${input_dbname}_genome_sequences.fasta";
+open(my $fasta_out, '>', $fasta_output_file) or die "Cannot open $fasta_output_file for writing: $!";
 
 # Connect to the Ensembl core db
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -65,12 +62,20 @@ my $transcript_results = {};
 # Create an output file for running Diamond
 open(OUT,">".$diamond_input_file_path);
 
+# Create an output file for the GFF annotations
+open(my $gff_out, '>', $gff_output_file) or die "Cannot open $gff_output_file for writing: $!";
+
+# Create an output file for diamond
+open(my $diamond_out, '>', $diamond_output_file_path) or die "Cannot open $diamond_output_file_path for writing: $!";
+
 # Loop through each seq region in the genome (a seq region is a chromosomes or toplevel scaffold)
 foreach my $slice (@$slices) {
+  say $fasta_out ">".$slice->seq_region_name;
+  say $fasta_out $slice->seq();
   # TESTING: uncomment to look at chromosome 4 only (note it will crash if there's no chromosome 4)
-  #  unless($slice->seq_region_name =~ /^\d+$/ && $slice->seq_region_name eq '4') {
-  #    next;
-  #  }
+  #unless($slice->seq_region_name =~ /^\d+$/ && $slice->seq_region_name eq '4') {
+  #  next;
+  #}
 
   # Gene the genes, only use the protein coding ones and then get the representative (canonical) transcript
   # Using this transcript we get various bits of information about it to then make some decisions as
@@ -97,6 +102,8 @@ foreach my $slice (@$slices) {
 
     my $five_prime_utr = $transcript->five_prime_utr();
     my $three_prime_utr = $transcript->three_prime_utr();
+    print "Five prime UTR object type: " . ref($five_prime_utr) . "\n";
+    print "Three prime UTR object type: " . ref($three_prime_utr) . "\n";
     my $cds_sequence = $transcript->translateable_seq();
     my $cds_exons = $transcript->get_all_CDS();
     my $cds_introns = scalar(@$cds_exons) - 1;
@@ -145,6 +152,73 @@ foreach my $slice (@$slices) {
     my $translation_seq = $translation->seq();
     say OUT ">".$transcript->stable_id();
     say OUT $translation_seq;
+
+    # Write the GFF file
+    my $gene_id = $gene->stable_id();
+    my $gene_start = $gene->seq_region_start();
+    my $gene_end = $gene->seq_region_end();
+    
+    # Write gene information to the GFF file
+
+    # Get the transcript information
+    my $transcript_id = $transcript->stable_id();
+    my $transcript_start = $transcript->seq_region_start();
+    my $transcript_end = $transcript->seq_region_end();
+    my $transcript_seq = $transcript->seq();
+    
+    # Write transcript information to the GFF file
+    say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'mRNA', $transcript_start, $transcript_end, '.', '.', '.', "Parent=$gene_id;ID=$transcript_id"), "\n";
+    
+
+    # Get the exons of the transcript
+    my $exons = $transcript->get_all_Exons();
+    
+    # Iterate over the exons
+    foreach my $exon (@$exons) {
+        # Get the exon information
+        my $exon_id = $exon->stable_id();
+        my $exon_start = $exon->seq_region_start();
+        my $exon_end = $exon->seq_region_end();
+        
+        # Write exon information to the GFF file
+        say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'exon', $exon_start, $exon_end, '.', '.', '.', "Parent=$transcript_id;ID=$exon_id"), "\n";
+    }
+    
+    # Write UTR information to the GFF file
+    if (defined $five_prime_utr) {
+        my $utr_id = $transcript_id . '_5UTR';
+        my $utr_start = index($transcript_seq, $five_prime_utr);
+        my $utr_end = $utr_start + length($five_prime_utr) - 1;
+        say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'five_prime_UTR', $utr_start, $utr_end, '.', '.', '.', "Parent=$transcript_id;ID=$utr_id"), "\n";
+    }
+    
+    if (defined $three_prime_utr) {
+        my $utr_id = $transcript_id . '_3UTR';
+        my $utr_start = index($transcript_seq, $three_prime_utr);
+        my $utr_end = $utr_start + length($three_prime_utr) - 1;
+        say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'three_prime_UTR', $utr_start, $utr_end, '.', '.', '.', "Parent=$transcript_id;ID=$utr_id"), "\n";
+    }
+    
+    my @cds_objects = @{$transcript->get_all_CDS()};
+
+    foreach my $cds (@cds_objects) {
+    	my $cds_id = $transcript_id . '_CDS';
+    	my $cds_start = $cds->start();
+    	my $cds_end = $cds->end();
+    	say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'CDS', $cds_start, $cds_end, '.', '.', '.', "Parent=$transcript_id;ID=$cds_id"), "\n";
+    }	
+    
+    
+    # Iterate over the introns
+    foreach my $intron (@$introns) {
+        # Get the intron information
+        my $intron_id = $transcript_id . '_intron_' . $intron->rank();
+        my $intron_start = $intron->seq_region_start();
+        my $intron_end = $intron->seq_region_end();
+        
+        # Write intron information to the GFF file
+        say $gff_out join("\t", $slice->seq_region_name(), 'Ensembl', 'intron', $intron_start, $intron_end, '.', '.', '.', "Parent=$transcript_id;ID=$intron_id"), "\n";
+    }
   }
 }
 
@@ -154,7 +228,7 @@ close OUT;
 # a query and target coverage (based clustering hits), the error (a measure of the missing coverage on both query
 # and target) and a score for how good the match was. The score considers the sequence identity (which is lowly
 # weighted) and the coverage (highly weighted)
-my $command = "python ".$diamond_script_path." $diamond_input_file_path $protein_db $diamond_output_file_path";
+my $command = "python3 ".$diamond_script_path." $diamond_input_file_path $protein_db $diamond_output_file_path";
 system($command);
 
 # Load the output from diamond into the hashref
@@ -171,15 +245,23 @@ while (my $row = <$fh>) {
 }
 close $fh;
 
+
 # This is the last step, take all the info and get a confidence rating, put this in the final output file
-open(OUT,">".$final_output_file_path);
-foreach my $transcript_id (keys%{$transcript_results}) {
-  my $output_line = confidence_rating($transcript_results->{$transcript_id});
-  $output_line = $dbname."\t".$host."\t".$port."\t".$output_line;
-  say OUT $output_line;
+open(OUT,">".$csv_output_file);
+foreach my $transcript_id (keys %{$transcript_results}) {
+    my $output_line = confidence_rating($transcript_results->{$transcript_id});
+    $output_line = $dbname."\t".$host."\t".$port."\t".$output_line;
+    say OUT $output_line;
+
+    # Write gene quality annotation to the GFF output file
+    my ($gene_id, $seq_region_name, $seq_region_start, $seq_region_end) = split("\t", $transcript_results->{$transcript_id}->{'gene_info'});
+    my $gene_quality = $transcript_results->{$transcript_id}->{'confidence'};
+    say $gff_out join("\t", $seq_region_name, 'Ensembl', 'gene', $seq_region_start, $seq_region_end, '.', '.', '.', "gene_id=$gene_id;gene_quality=$gene_quality"), "\n";
 }
 close OUT;
-
+close $gff_out;
+close $diamond_out;
+close $fasta_out;
 #use Data::Dumper;
 #print Dumper($transcript_results);
 

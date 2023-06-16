@@ -22,7 +22,7 @@ query_lengths = {seq.id: len(seq) for seq in SeqIO.parse(fasta_file, "fasta")}
 # fairly generous in terms of gaps, so if the hit was broken it should probably be low confidence
 # It could be updated to later on handle multiple hits, but probably needlessly complex
 # To do this you'd want the --max-hsps flag
-command = f"diamond blastp -d {database} -q {fasta_file} -f 6 qseqid sseqid qstart qend slen pident nident length gaps --masking 0 -o {output_file}"
+command = f"diamond blastp -d {database} -q {fasta_file} --masking 0 -f 6 qseqid sseqid qstart qend slen pident nident length gaps -o {output_file}"
 subprocess.run(command, shell=True)
 
 # Parse the output from diamond
