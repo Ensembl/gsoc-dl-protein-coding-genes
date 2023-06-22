@@ -13,8 +13,8 @@ args = parser.parse_args()
 os.makedirs(args.output_dir, exist_ok=True)
 
 # Get all GFF and FASTA files
-gff_files = sorted([f for f in os.listdir(args.input_dir) if f.endswith('genome_annotations_filtered_removed_sequences.gff')])
-fasta_files = sorted([f for f in os.listdir(args.input_dir) if f.endswith('genome_sequences_filtered_removed_sequences.fasta')])
+gff_files = sorted([f for f in os.listdir(args.input_dir) if f.endswith('genome_annotations.gff')])
+fasta_files = sorted([f for f in os.listdir(args.input_dir) if f.endswith('genome_sequences.fasta')])
 
 # Check if there is a corresponding FASTA file for each GFF file
 if len(gff_files) != len(fasta_files):
@@ -33,8 +33,8 @@ for gff_file, fasta_file in zip(gff_files, fasta_files):
 #BSUB -o {args.output_dir}/job_{gff_file}.out
 #BSUB -e {args.output_dir}/job_{gff_file}.err
 #BSUB -n 1
-#BSUB -M 256072
-#BSUB -W 720
+#BSUB -M 400072
+#BSUB -W 1400
 
 {command}
 """
