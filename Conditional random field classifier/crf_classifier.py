@@ -7,9 +7,11 @@ import ast
 from sklearn.model_selection import train_test_split
 from plotting_results import *
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
+import joblib
 
 # Example usage:
 directory = '/path/to/your/directory'
+output_directory = ""
 
 
 def load_data_from_directory(directory):
@@ -109,13 +111,20 @@ def train_crf_classifier(features_list, labels_list, hyperparameters, labels_tes
         'max_iterations': 100,  # maximum number of iterations
         'feature.possible_transitions': True  # include possible transitions
     })
-
-    trainer.train(f'crf_model_c1_{c1}_c2_{c2}.crfsuite')  # Use different file name for each model
+    
+    model_filename = f'crf_model_c1_{c1}_c2_{c2}.crfsuite'
+    trainer.train(model_filename)  # Use different file name for each model
+    
+    path_filename = os.path.join(output_directory, model_filename)
+    trainer.train(path_filename)  # Use different file name for each model
+    
+    # Saving the model using joblib
+    joblib.dump(trainer, model_filename)
 
     # Predict and evaluate for each test sequence separately, then combine results
     performances = []
     for features_test, labels_test in zip(features_test_list, labels_test_list):
-        y_pred = predict_gene_probability(features_test, f'crf_model_c1_{c1}_c2_{c2}.crfsuite')
+        y_pred = predict_gene_probability(features_test, model_filename)
         performance = evaluate_on_validation_set(labels_test, y_pred)  # Replace with your own function to evaluate the model
         performances.append(performance)
 
