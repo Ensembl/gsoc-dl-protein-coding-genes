@@ -192,9 +192,8 @@ def main(file, output_directory):
         all_y_pred.extend(y_pred)
         y_true.extend(labels_test)
     y_pred = all_y_pred
-    y_true = labels_test
-    y_pred_binary = [["gene" if y_pred_instance >=
-                      0.5 else "no-gene" for y_pred_instance in y_pred]]
+    y_pred_binary = ["gene" if y_pred_instance >=
+                      0.5 else "no-gene" for y_pred_instance in y_pred]
     print(y_pred, y_pred_binary, y_true)
     # Write the probabilities to a file
     with open('probabilities_{filename_base}.txt', 'w') as f:
