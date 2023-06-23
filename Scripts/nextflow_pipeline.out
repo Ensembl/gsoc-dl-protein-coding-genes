@@ -1,0 +1,914 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsf@hl-codon-122-01>
+Subject: Job 27705556: <nextflow_pipeline> in cluster <codon> Exited
+
+Job <nextflow_pipeline> was submitted from host <hl-codon-43-02> by user <frida> in cluster <codon> at Mon Jun 19 22:54:27 2023
+Job was executed on host(s) <hl-codon-122-01>, in queue <standard>, as user <frida> in cluster <codon> at Mon Jun 19 22:55:12 2023
+</homes/frida> was used as the home directory.
+</hps/nobackup/flicek/ensembl/genebuild/frida/scripts> was used as the working directory.
+Started at Mon Jun 19 22:55:12 2023
+Terminated at Mon Jun 19 22:56:21 2023
+Results reported at Mon Jun 19 22:56:21 2023
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+nextflow run nextflow_fetch_genes_from_database_and_run_data_cleaning_preprocession.nf
+------------------------------------------------------------
+
+TERM_OWNER: job killed by owner.
+Exited with signal termination: 2.
+
+Resource usage summary:
+
+    CPU time :                                   0.02 sec.
+    Max Memory :                                 1 MB
+    Average Memory :                             1.00 MB
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              1
+    Max Threads :                                1
+    Run time :                                   61 sec.
+    Turnaround time :                            114 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <nextflow_pipeline.err> for stderr output of this job.
+
+N E X T F L O W  ~  version 20.07.1
+Launching `/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/nextflow_fetch_genes_from_database_and_run_data_cleaning_preprocession.nf` [gigantic_swirles] - revision: 6ca47ff3e5
+[-        ] process > run_perl_script                -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+[-        ] process > run_perl_script                [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (1)
+[f5/80e3a2] process > run_perl_script (80)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (2)
+[b8/265e0c] process > run_perl_script (62)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (3)
+[88/efaa28] process > run_perl_script (6)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (4)
+[53/68ef53] process > run_perl_script (39)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (5)
+[69/ee8cab] process > run_perl_script (22)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (6)
+[68/0abf64] process > run_perl_script (12)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (7)
+[20/76f830] process > run_perl_script (47)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (8)
+[0f/7d81f1] process > run_perl_script (55)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (9)
+[c8/6adcf3] process > run_perl_script (94)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (10)
+[1c/886361] process > run_perl_script (59)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (11)
+[e4/ee4ec4] process > run_perl_script (45)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (12)
+[61/fbc065] process > run_perl_script (26)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (13)
+[f0/770b5a] process > run_perl_script (1)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (14)
+[ea/883c34] process > run_perl_script (71)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (15)
+[2e/d7e75c] process > run_perl_script (83)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (16)
+[5f/50bd1b] process > run_perl_script (33)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (17)
+[5d/6bf7c4] process > run_perl_script (66)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (18)
+[f4/8608f4] process > run_perl_script (63)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (19)
+[23/abc6a0] process > run_perl_script (53)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (20)
+[48/1a5a8b] process > run_perl_script (95)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (21)
+[88/6ad102] process > run_perl_script (68)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (22)
+[68/ecc22c] process > run_perl_script (13)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (23)
+[53/7eaef9] process > run_perl_script (81)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (24)
+[d6/35f8f0] process > run_perl_script (69)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (25)
+[69/f1ec2c] process > run_perl_script (100)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (26)
+[ee/667293] process > run_perl_script (5)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (27)
+[b7/2e95a5] process > run_perl_script (99)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (28)
+[80/b108ed] process > run_perl_script (86)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (29)
+[7b/a3cbdb] process > run_perl_script (11)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (30)
+[13/30fe59] process > run_perl_script (43)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (31)
+[05/6d7ad7] process > run_perl_script (20)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (32)
+[43/68ab51] process > run_perl_script (78)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (33)
+[8d/06fd4e] process > run_perl_script (42)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (34)
+[67/32ceda] process > run_perl_script (82)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (35)
+[fc/161051] process > run_perl_script (49)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (36)
+[f0/49371a] process > run_perl_script (15)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (37)
+[d5/be5aab] process > run_perl_script (74)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (38)
+[d0/edbfa0] process > run_perl_script (23)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (39)
+[8c/4f553c] process > run_perl_script (77)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (40)
+[e3/379494] process > run_perl_script (91)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (41)
+[07/22ca98] process > run_perl_script (65)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (42)
+[b2/526f4a] process > run_perl_script (84)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (43)
+[4d/2a1300] process > run_perl_script (52)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (44)
+[c1/a82daf] process > run_perl_script (67)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (45)
+[ef/aaccfa] process > run_perl_script (27)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (46)
+[e7/2b0a7b] process > run_perl_script (93)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (47)
+[93/5d3f85] process > run_perl_script (98)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (48)
+[4f/018ff9] process > run_perl_script (58)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (49)
+[63/80f464] process > run_perl_script (40)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (50)
+[a9/3e18f7] process > run_perl_script (97)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (51)
+[e2/87a571] process > run_perl_script (44)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (52)
+[21/cf9cb3] process > run_perl_script (3)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (53)
+[83/2d0359] process > run_perl_script (29)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (54)
+[34/b9b0b6] process > run_perl_script (2)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (55)
+[48/18abcc] process > run_perl_script (21)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (56)
+[fe/64871f] process > run_perl_script (14)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (57)
+[56/799fdc] process > run_perl_script (72)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (58)
+[a5/125616] process > run_perl_script (35)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (59)
+[7c/a999b6] process > run_perl_script (48)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (60)
+[c3/7c75b5] process > run_perl_script (38)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (61)
+[6c/97a016] process > run_perl_script (17)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (62)
+[ce/97397a] process > run_perl_script (24)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (63)
+[73/8007a8] process > run_perl_script (61)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (64)
+[5f/dab6b5] process > run_perl_script (89)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (65)
+[40/cef42f] process > run_perl_script (18)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (66)
+[6a/033e79] process > run_perl_script (92)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (67)
+[92/1c49c6] process > run_perl_script (31)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (68)
+[c6/0ccc07] process > run_perl_script (10)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (69)
+[94/8c68b0] process > run_perl_script (30)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (70)
+[3a/a1ca70] process > run_perl_script (60)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (71)
+[ec/229963] process > run_perl_script (70)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (72)
+[78/0d40ea] process > run_perl_script (7)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (73)
+[49/616cd8] process > run_perl_script (37)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (74)
+[cc/6469ab] process > run_perl_script (51)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (75)
+[2b/cdcc3b] process > run_perl_script (34)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (76)
+[fa/79b425] process > run_perl_script (50)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (77)
+[50/2730fb] process > run_perl_script (19)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (78)
+[64/548f32] process > run_perl_script (8)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (79)
+[ae/3d4ead] process > run_perl_script (57)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (80)
+[51/2ac73f] process > run_perl_script (73)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (81)
+[14/df4738] process > run_perl_script (85)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (82)
+[5a/c433d0] process > run_perl_script (90)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (83)
+[a4/b62718] process > run_perl_script (75)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (84)
+[1b/a3e457] process > run_perl_script (96)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (85)
+[38/0f36e0] process > run_perl_script (87)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (86)
+[0f/e306c0] process > run_perl_script (46)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (87)
+[53/1d74ce] process > run_perl_script (41)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (88)
+[17/a05723] process > run_perl_script (9)            [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (89)
+[80/8b67e6] process > run_perl_script (122)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (90)
+[c1/87eb38] process > run_perl_script (103)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (91)
+[fc/eda211] process > run_perl_script (109)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (92)
+[43/ae01a1] process > run_perl_script (125)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (93)
+[2e/80dc9e] process > run_perl_script (132)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (94)
+[a9/ef7c82] process > run_perl_script (56)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (95)
+[8d/240c0b] process > run_perl_script (117)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (96)
+[48/db5bab] process > run_perl_script (79)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (97)
+[67/c357eb] process > run_perl_script (107)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (98)
+[7b/b13dd7] process > run_perl_script (104)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (99)
+[f0/df3fd7] process > run_perl_script (25)           [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (100)
+[34/24dd29] process > run_perl_script (119)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (100)
+[34/24dd29] process > run_perl_script (119)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+executor >  lsf (100)
+[34/24dd29] process > run_perl_script (119)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+
+WARN: Killing pending tasks (99)
+executor >  lsf (100)
+[34/24dd29] process > run_perl_script (119)          [  0%] 0 of 150
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+Error executing process > 'run_perl_script (62)'
+
+Caused by:
+  Process `run_perl_script (62)` terminated with an error exit status (22)
+
+Command executed:
+
+  perl /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/high_confidence_genes_gsoc23_full_gff.pl -user ensro -host 4684 -port null -diamond_script_path /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/get_diamond_coverage.py -protein_db /hps/nobackup/flicek/ensembl/genebuild/frida/data/all_mammal_proteins.dmnd -output_dir /hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/unfiltered_genomes/ -dbname lemur_catta_gca004024665v1_core_109_1	mysql-ens-sta-5
+
+Command exit status:
+  22
+
+Command output:
+  (empty)
+
+Command error:
+  Value "null" invalid for option port (number expected)
+  Could not connect to database lemur_catta_gca004024665v1_core_109_1 as user ensro using [DBI:mysql:database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306] as a locator:
+  DBI connect('database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306','ensro',...) failed: Can't connect to MySQL server on '4684' (22) at /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm line 260.
+  
+  -------------------- EXCEPTION --------------------
+  MSG: Could not connect to database lemur_catta_gca004024665v1_core_109_1 as user ensro using [DBI:mysql:database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306] as a locator:
+  DBI connect('database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306','ensro',...) failed: Can't connect to MySQL server on '4684' (22) at /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm line 260.
+  
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::connect /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:276
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::db_handle /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:673
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::prepare /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:704
+  STACK Bio::EnsEMBL::DBSQL::BaseAdaptor::prepare /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm:175
+  STACK Bio::EnsEMBL::DBSQL::BaseMetaContainer::list_value_by_key /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseMetaContainer.pm:123
+  STACK Bio::EnsEMBL::DBSQL::BaseMetaContainer::get_schema_version /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseMetaContainer.pm:78
+  STACK Bio::EnsEMBL::Registry::version_check /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/Registry.pm:2912
+  STACK Bio::EnsEMBL::Registry::get_adaptor /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/Registry.pm:1186
+  STACK Bio::EnsEMBL::DBSQL::DBAdaptor::AUTOLOAD /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBAdaptor.pm:987
+  STACK toplevel /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/high_confidence_genes_gsoc23_full_gff.pl:47
+  Date (localtime)    = Tue Jun 20 06:13:17 2023
+  Ensembl API version = 109
+  ---------------------------------------------------
+
+Work dir:
+  /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/work/b8/265e0c4398c0477309134cad3065e7
+
+Tip: when you have fixed the problem you can continue the execution adding the option `-resume` to the run command line
+
+executor >  lsf (100)
+[34/24dd29] process > run_perl_script (119)          [  2%] 1 of 51, failed: 1
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_removal_of_overlapping_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+[-        ] process > run_split_gff_and_fasta_to_... -
+Error executing process > 'run_perl_script (62)'
+
+Caused by:
+  Process `run_perl_script (62)` terminated with an error exit status (22)
+
+Command executed:
+
+  perl /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/high_confidence_genes_gsoc23_full_gff.pl -user ensro -host 4684 -port null -diamond_script_path /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/get_diamond_coverage.py -protein_db /hps/nobackup/flicek/ensembl/genebuild/frida/data/all_mammal_proteins.dmnd -output_dir /hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/unfiltered_genomes/ -dbname lemur_catta_gca004024665v1_core_109_1	mysql-ens-sta-5
+
+Command exit status:
+  22
+
+Command output:
+  (empty)
+
+Command error:
+  Value "null" invalid for option port (number expected)
+  Could not connect to database lemur_catta_gca004024665v1_core_109_1 as user ensro using [DBI:mysql:database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306] as a locator:
+  DBI connect('database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306','ensro',...) failed: Can't connect to MySQL server on '4684' (22) at /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm line 260.
+  
+  -------------------- EXCEPTION --------------------
+  MSG: Could not connect to database lemur_catta_gca004024665v1_core_109_1 as user ensro using [DBI:mysql:database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306] as a locator:
+  DBI connect('database=lemur_catta_gca004024665v1_core_109_1;host=4684;port=3306','ensro',...) failed: Can't connect to MySQL server on '4684' (22) at /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm line 260.
+  
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::connect /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:276
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::db_handle /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:673
+  STACK Bio::EnsEMBL::DBSQL::DBConnection::prepare /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBConnection.pm:704
+  STACK Bio::EnsEMBL::DBSQL::BaseAdaptor::prepare /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseAdaptor.pm:175
+  STACK Bio::EnsEMBL::DBSQL::BaseMetaContainer::list_value_by_key /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseMetaContainer.pm:123
+  STACK Bio::EnsEMBL::DBSQL::BaseMetaContainer::get_schema_version /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/BaseMetaContainer.pm:78
+  STACK Bio::EnsEMBL::Registry::version_check /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/Registry.pm:2912
+  STACK Bio::EnsEMBL::Registry::get_adaptor /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/Registry.pm:1186
+  STACK Bio::EnsEMBL::DBSQL::DBAdaptor::AUTOLOAD /homes/frida/perl5/lib/perl5/5.26.3/Bio/EnsEMBL/DBSQL/DBAdaptor.pm:987
+  STACK toplevel /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/high_confidence_genes_gsoc23_full_gff.pl:47
+  Date (localtime)    = Tue Jun 20 06:13:17 2023
+  Ensembl API version = 109
+  ---------------------------------------------------
+
+Work dir:
+  /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/work/b8/265e0c4398c0477309134cad3065e7
+
+Tip: when you have fixed the problem you can continue the execution adding the option `-resume` to the run command line
+
+
+------------------------------------------------------------
+Sender: LSF System <lsf@hl-codon-10-04>
+Subject: Job 27706366: <nextflow_pipeline> in cluster <codon> Exited
+
+Job <nextflow_pipeline> was submitted from host <codon-login-01> by user <frida> in cluster <codon> at Mon Jun 19 23:12:15 2023
+Job was executed on host(s) <hl-codon-10-04>, in queue <standard>, as user <frida> in cluster <codon> at Mon Jun 19 23:12:29 2023
+</homes/frida> was used as the home directory.
+</hps/nobackup/flicek/ensembl/genebuild/frida/scripts> was used as the working directory.
+Started at Mon Jun 19 23:12:29 2023
+Terminated at Tue Jun 20 06:16:06 2023
+Results reported at Tue Jun 20 06:16:06 2023
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+nextflow run /hps/nobackup/flicek/ensembl/genebuild/frida/scripts/nextflow_fetch_genes_from_database_and_run_data_cleaning_preprocession.nf
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   114.80 sec.
+    Max Memory :                                 1104 MB
+    Average Memory :                             1028.97 MB
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              5
+    Max Threads :                                102
+    Run time :                                   25516 sec.
+    Turnaround time :                            25431 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file </hps/nobackup/flicek/ensembl/genebuild/frida/scripts/nextflow_pipeline.err> for stderr output of this job.
+
