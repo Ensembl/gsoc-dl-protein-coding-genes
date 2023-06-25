@@ -33,7 +33,7 @@ for gff_file, fasta_file in zip(gff_files, fasta_files):
 #BSUB -o {args.output_dir}/job_{gff_file}.out
 #BSUB -e {args.output_dir}/job_{gff_file}.err
 #BSUB -n 1
-#BSUB -M 131072
+#BSUB -M 512072
 #BSUB -W 720
 
 {command}

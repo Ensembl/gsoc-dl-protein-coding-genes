@@ -53,14 +53,19 @@ def filter_sequences(output_dir, gff_file):
                               if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene') and 'gene_quality' in feature.attributes
                               and (feature.attributes['gene_quality'][0] == 'low' or feature.attributes['gene_quality'][0] == 'medium')]
 
+    all_genes_sorted = sorted([feature for feature in db.all_features(
+        order_by='start') if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene')], key=lambda x: (x.seqid, x.start))
+
+    overlapping_gene_ids_ranges = find_overlapping_genes(all_genes_sorted)
+    genes_to_remove = low_quality_ids_ranges.extend(overlapping_gene_ids_ranges)
 
     # Create a sorted list of all genes
     all_genes = sorted([feature for feature in db.all_features(
         order_by='start') if (feature.featuretype == 'gene_quality' or feature.featuretype == 'gene')], key=lambda x: x.start)
 
     # For each low-quality gene, find the upstream and downstream genes
-    low_quality_ids_ranges_extended = []
-    for id, seq_id, (start, end) in low_quality_ids_ranges:
+    genes_to_remove_ranges_extended = []
+    for id, seq_id, (start, end) in genes_to_remove:
         gene_idx = next(
             (i for i, g in enumerate(all_genes) if g.id == id), None)
         if gene_idx is not None:
@@ -74,7 +79,7 @@ def filter_sequences(output_dir, gff_file):
                 end_new = int((end + downstream_gene.start) / 2)
             else:
                 end_new = end
-            low_quality_ids_ranges_extended.append((id, seq_id, (start_new, end_new)))
+            genes_to_remove_ranges_extended.append((id, seq_id, (start_new, end_new)))
 
     # Now, create a sorted list of all features, not just genes
     all_features = sorted([feature for feature in db.all_features(order_by='start')], key=lambda x: x.start)
@@ -83,7 +88,7 @@ def filter_sequences(output_dir, gff_file):
     with open(out_gff_file, 'w') as outfile:
         for feature in all_features:
             # Check if the feature is within the extended window of any low-quality gene
-            for id, seq_id, (start, end) in low_quality_ids_ranges_extended:
+            for id, seq_id, (start, end) in genes_to_remove_ranges_extended:
                 if seq_id == feature.seqid and not (feature.end < start or feature.start > end):
                     break  # This feature is within the extended window of a low-quality gene
             else:
