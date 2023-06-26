@@ -28,7 +28,8 @@ def is_repetitive(db, start, end, sequence_len, strand, seq_id):
     start += 1
     end += 1
     for feature in db.region(region=(seq_id, start, end)):
-        if 'repeat' in feature.attributes['ID']:
+        feature_id = feature.attributes.get('ID', None)
+        if feature_id and 'repeat' in feature_id:
             return 1
     return 0
 
@@ -48,7 +49,7 @@ def is_gene(db, start, end, sequence_len, strand, seq_id):
 def process_fasta(fasta_file, gff_file, output_file = None, fragment_size=1000, k=3, classification_mode = False):
     # Open the GFF database
     print (gff_file)
-    db = gffutils.create_db(gff_file, dbfn='temp.db', force=True,
+    db = gffutils.create_db(gff_file, dbfn=f'{gff_file}_temp.db', force=True,
                             keep_order=True, merge_strategy='merge',
                             sort_attribute_values=True)
 
@@ -80,7 +81,7 @@ def process_fasta(fasta_file, gff_file, output_file = None, fragment_size=1000, 
                 f.write(str(fragments_in_record) + '\n')
 
     # Remove temporary database
-    os.remove('temp.db')
+    os.remove(f'{gff_file}_temp.db')
 
                
     
