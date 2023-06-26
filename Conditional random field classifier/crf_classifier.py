@@ -20,11 +20,11 @@ def load_data_from_file(file_path):
                 # Use ast.literal_eval to convert string to dictionary
                 sequence = ast.literal_eval(line.strip())
                 data.append(sequence)
-    print("loaded data")
+    print("Loaded data")
     return data
 
 
-def split_data(data, test_size=0.5, random_state=42):
+def split_data(data, test_size=0.3, random_state=42):
     """
     Split the data into training and test sets.
 
@@ -102,7 +102,7 @@ def train_crf_classifier(features_list, labels_list, hyperparameters, labels_tes
     # Loop over each sequence of features and labels and append them
     for features, labels in zip(features_list, labels_list):
         trainer.append(features, labels)
-    print("loaded_data")
+    print("Loaded_data")
 
     c1, c2 = hyperparameters  # Unpack hyperparameters
     trainer.set_params({
@@ -128,7 +128,7 @@ def train_crf_classifier(features_list, labels_list, hyperparameters, labels_tes
             all_y_labels.extend(labels_test)
     performance = evaluate_on_validation_set(all_y_labels, all_y_pred)
 
-    return performance
+    return performance, hyperparameters
 
 
 
@@ -137,13 +137,16 @@ def hyperparameter_search(features, labels, hyperparameters, labels_test, featur
     with multiprocessing.Pool() as pool:
         # Use starmap to apply train_crf_classifier to each set of hyperparameters in parallel
         results = pool.starmap(train_crf_classifier, [(features, labels, hp, labels_test, features_test, file) for hp in hyperparameters])
+    performances, hyperparameters_trained = zip(*results)
     # Determine the best hyperparameters by comparing the performances
-    f1_scores = [result['f1_score'] for result in results]
+    f1_scores = [performance['f1_score'] for performance in performances]
     best_index = f1_scores.index(max(f1_scores))
-    best_hyperparameters = hyperparameters[best_index]
+    best_hyperparameters = hyperparameters_trained[best_index]
     best_performance = f1_scores[best_index]
+    all_classifiers_performances = {
+        hyperparameters_trained[index]: performance for index, performance in enumerate(performances)}
     
-    return best_hyperparameters, best_performance
+    return best_hyperparameters, best_performance, all_classifiers_performances
 
 
 def predict_gene_probability(features_test, name_classifier_with_best_performance):
@@ -151,6 +154,7 @@ def predict_gene_probability(features_test, name_classifier_with_best_performanc
     for sequence in features_test:
         tagger = pycrfsuite.Tagger()
         tagger.open(name_classifier_with_best_performance)
+
 
         sequence_label_probabilities = [tagger.marginal(
             'gene', t) for t in range(len(sequence))]
@@ -169,13 +173,13 @@ def main(file, output_directory):
     print("splitted_data")
     features_train, labels_train = extract_features_and_labels(train_data)
     features_test, labels_test = extract_features_and_labels(test_data)
-    hyperparameters, best_performance = hyperparameter_search(features_train, labels_train, hyperparameters, labels_test, features_test, file)
+    hyperparameters, best_performance, all_classifiers_performances = hyperparameter_search(
+        features_train, labels_train, hyperparameters, labels_test, features_test, file)
 
     print (hyperparameters, best_performance)
     # Write the best hyperparameters to a file
     with open(f'hyperparameters_{filename_base}.txt', 'w') as f:
-        f.write(f'Best performance: {best_performance}\n')
-        f.write('Best hyperparameters: c1: {c1} c2:{c2}\n')
+        f.write(f'{all_classifiers_performances}')
 
     c1, c2 = hyperparameters
     
@@ -196,13 +200,14 @@ def main(file, output_directory):
                       0.5 else "no-gene" for y_pred_instance in y_pred]
     print(y_pred, y_pred_binary, y_true)
     # Write the probabilities to a file
-    with open('probabilities_{filename_base}.txt', 'w') as f:
+    with open(f'probabilities_{filename_base}.txt', 'w') as f:
         f.write(str(y_pred))
 
-    plot_confusion_matrix(y_true, y_pred_binary, save_path='confusion_matrix.png')
+    plot_confusion_matrix(y_true, y_pred_binary,
+                          save_path=f'{filename_base}_confusion_matrix.png')
     plot_precision_recall_curve(
-        y_true, y_pred, save_path='precision_recall_curve.png')
-    plot_roc_curve(y_true, y_pred, save_path='roc_curve.png')
+        y_true, y_pred, save_path=f'{filename_base}_precision_recall_curve.png')
+    plot_roc_curve(y_true, y_pred, save_path=f'{filename_base}_roc_curve.png')
     plot_sequence_probabilities(y_true[0], y_pred[0])
 
 if __name__ == "__main__":
@@ -218,9 +223,7 @@ if __name__ == "__main__":
 
     # Parse arguments
     args = parser.parse_args()
-
-    # Assign input arguments to variables
     file = args.file
-    print (file)
     output_directory = args.output_directory
+    print(file)
     main(file, output_directory)
