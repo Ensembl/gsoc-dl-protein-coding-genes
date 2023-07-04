@@ -62,7 +62,7 @@ def extract_features_and_labels(data):
     labels = []
     features = []
     feature_mean_std = calculate_mean_std(data)
-    for sequence in data:       
+    for sequence in data:
         features_sequence = []
         labels_sequence = []
         for dictionary in sequence:
@@ -71,7 +71,7 @@ def extract_features_and_labels(data):
                 if key != 'gene':
                     mean, std = feature_mean_std[key]
                     normalized_value = (value - mean) / std if std > 0 else 0.0
-                    feature_vector.append(f'{key}={normalized_value}') 
+                    feature_vector.append(f'{key}={normalized_value}')
             labels_sequence.append (dictionary['gene'])
             features_sequence.append(feature_vector)
         labels.append(labels_sequence)
@@ -111,13 +111,13 @@ def train_crf_classifier(features_list, labels_list, hyperparameters, labels_tes
         'max_iterations': 100,  # maximum number of iterations
         'feature.possible_transitions': True  # include possible transitions
     })
-    
+
     model_filename = f'crf_model_c1_{c1}_c2_{c2}.crfsuite'
     trainer.train(model_filename)  # Use different file name for each model
-    
+
     path_filename = os.path.join(output_directory, model_filename)
     trainer.train(path_filename)  # Use different file name for each model
-    
+
     # Saving the model using joblib
     joblib.dump(trainer, model_filename)
 
@@ -144,7 +144,7 @@ def hyperparameter_search(features, labels, hyperparameters, labels_test, featur
     best_index = f1_scores.index(max(f1_scores))
     best_hyperparameters = hyperparameters[best_index]
     best_performance = f1_scores[best_index]
-    
+
     return best_hyperparameters, best_performance
 
 def predict_gene_probability(features_test, name_classifier_with_best_performance):
@@ -154,7 +154,7 @@ def predict_gene_probability(features_test, name_classifier_with_best_performanc
         tagger.open(name_classifier_with_best_performance)
 
         sequence_label_probabilities = tagger.marginal(sequence)
-        gene_probabilities.append(sequence_label_probabilities[:, tagger.labelid('gene')].mean(axis=1)) 
+        gene_probabilities.append(sequence_label_probabilities[:, tagger.labelid('gene')].mean(axis=1))
     print (gene_probabilities)
     return gene_probabilities
 
@@ -162,7 +162,7 @@ def predict_gene_probability(features_test, name_classifier_with_best_performanc
 c1_values = np.logspace(-3, 3, 7)  # Values for c1
 c2_values = np.logspace(-3, 3, 7)  # Values for c2
 hyperparameters = list(product(c1_values, c2_values))  # All combinations of c1 and c2
-
+hyperparameters = [[1,1]]
 complete_data = load_data_from_directory(directory)
 train_data, test_data = split_data(complete_data)
 features_train, labels_train = extract_features_and_labels(train_data)
@@ -186,7 +186,7 @@ probabilities = predict_gene_probability(features_test, name_classifier_with_bes
 with open('probabilities.txt', 'w') as f:
     f.write(str(probabilities))
 
-# Plot everything 
+# Plot everything
 # Generate true labels and predicted probabilities
 y_true = labels_test
 y_pred = [[1 if y_pred_instance >= 0.5 else 0 for y_pred_instance in probabilities_per_seq] for probabilities_per_seq in features_test]

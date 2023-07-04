@@ -20,26 +20,26 @@ def count_kmers(sequence, k):
         d[sequence[i:i+k]] += 1
     return dict(d)
 
-def is_repetitive(db, start, end, sequence_len, strand):
+def is_repetitive(db, start, end, sequence_len, strand, record):
     if strand == '-':
         start, end = sequence_len - end, sequence_len - start
-    
+
     # account for 1 based indexing in gff
     start += 1
     end += 1
-    for feature in db.region(region=(start, end)):
+    for feature in db.region(region=(record, start, end)):
         if feature.featuretype == 'repeat':
             return 1
     return 0
 
-def is_gene(db, start, end, sequence_len, strand):
+def is_gene(db, start, end, sequence_len, strand, record):
     if strand == '-':
         start, end = sequence_len - end, sequence_len - start
     # account for 1 based indexing in gff
     start += 1
     end += 1
-    for feature in db.region(region=(start, end)):
-        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality') and feature.strand == strand:
+    for feature in db.region(region=(record, start, end)):
+        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality' or feature.featuretype == 'exon') and feature.strand == strand:
             return 1
     return 0
 
@@ -50,38 +50,36 @@ def process_fasta(fasta_file, gff_file, output_file = None, fragment_size=100, k
                             sort_attribute_values=True)
 
     fragments = []
-    with open(fasta_file, "r") as handle:
-        for record in SeqIO.parse(handle, "fasta"):
-            sequence = str(record.seq)
-            sequence_rev = str(record.seq.reverse_complement())
-            sequence_len = len(sequence)
+    if output_file is not None:
+        with open(output_file, 'w') as f:
+            with open(fasta_file, "r") as handle:
+                for record in SeqIO.parse(handle, "fasta"):
+                    print (record)
+                    sequence = str(record.seq)
+                    sequence_rev = str(record.seq.reverse_complement())
+                    sequence_len = len(sequence)
 
-            # Processing both normal and reverse complement strands
-            fragments_in_record = []
-            for seq, strand in [(sequence, '+'), (sequence_rev, '-')]:
-                for i in range(0, sequence_len, fragment_size):
-                    start = i
-                    end = i + fragment_size
-                    fragment = seq[start:end]
-                    features = count_kmers(fragment, k)
-                    features['position'] = start
-                    features['relative_position'] = start/sequence_len
-                    features['strand'] = 1 if strand == "+" else -1
-                    features['repetitive'] = is_repetitive(db, start, end, sequence_len, strand)
-                    if classification_mode == False:
-                        features['gene'] = is_gene(db, start, end, sequence_len, strand)
-                    fragments_in_record.append(features)
-                fragments.append(fragments_in_record)
+                    # Processing both normal and reverse complement strands
+                    fragments_in_record = []
+                    for seq, strand in [(sequence, '+'), (sequence_rev, '-')]:
+                        for i in range(0, sequence_len, fragment_size):
+                            start = i
+                            end = i + fragment_size
+                            fragment = seq[start:end]
+                            features = count_kmers(fragment, k)
+                            features['position'] = start
+                            features['relative_position'] = start/sequence_len
+                            features['strand'] = 1 if strand == "+" else -1
+                            features['repetitive'] = is_repetitive(db, start, end, sequence_len, strand, record.id)
+                            if classification_mode == False:
+                                features['gene'] = is_gene(db, start, end, sequence_len, strand, record.id)
+                            fragments_in_record.append(features)
+                    fragments.append(fragments_in_record)
+                    f.write(str(fragments_in_record) + '\n')
 
     # Remove temporary database
     os.remove('temp.db')
 
-    if output_file is not None:
-        # Write fragments to output file
-        with open(output_file, 'w') as f:
-            for fragment in fragments:
-                f.write(str(fragment) + '\n')
-    
     return fragments
 
 def main():
