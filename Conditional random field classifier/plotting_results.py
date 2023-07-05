@@ -12,7 +12,8 @@ def plot_confusion_matrix(y_true, y_pred, save_path=None):
     plt.show()
 
 def plot_precision_recall_curve(y_true, probabilities, save_path=None):
-    precision, recall, _ = precision_recall_curve(y_true, probabilities)
+    precision, recall, _ = precision_recall_curve(
+        y_true, probabilities, pos_label='gene')
     disp = PrecisionRecallDisplay(precision=precision, recall=recall)
     disp.plot()
     plt.title('Precision-Recall Curve')
@@ -21,7 +22,7 @@ def plot_precision_recall_curve(y_true, probabilities, save_path=None):
     plt.show()
 
 def plot_roc_curve(y_true, probabilities, save_path=None):
-    fpr, tpr, _ = roc_curve(y_true, probabilities)
+    fpr, tpr, _ = roc_curve(y_true, probabilities, pos_label='gene')
     disp = RocCurveDisplay(fpr=fpr, tpr=tpr)
     disp.plot()
     plt.title('ROC Curve')

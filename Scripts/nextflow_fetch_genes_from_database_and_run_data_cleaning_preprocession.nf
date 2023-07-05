@@ -16,7 +16,8 @@ params.server_list = "/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/serve
 
 Channel
     .fromPath(params.server_list)
-    .splitCsv(header:false, sep:' ', strip:true)
+    .splitText()
+    .map { it.trim().split() }
     .map { it -> tuple(it[0], it[1], it[2]) }
     .set { servers }
 
@@ -24,7 +25,9 @@ process run_perl_script {
     publishDir params.output_dir, mode: 'copy', pattern: "*.{fasta,gff}"
 
     output:
-    tuple val(dbname), path("${dbname}_genome_sequences.fasta"), path("${dbname}_genome_annotations.gff") into perled_files
+    tuple val(dbname), path("${dbname}_genome_sequences.fasta"), path("${dbname}_genome_annotations.gff") into perled_files_genes
+    tuple val(dbname), path("${dbname}_genome_annotations.gff") into perled_files_annotations
+    tuple val(dbname), path("${dbname}_genome_sequences.fasta") into perled_files_fastas
 
     input:
     tuple val(dbname), val(host), val(port) from servers
@@ -42,7 +45,7 @@ process run_removal_of_overlapping_genes_annotation {
     tuple val(dbname), path("${dbname}_genome_annotations_filtered.gff") into filtered_annotations
 
     input:
-    tuple val(dbname), path(gff_file) from perled_files
+    tuple val(dbname), path(gff_file) from perled_files_annotations
 
     script:
     """
@@ -57,7 +60,7 @@ process run_removal_of_overlapping_genes{
     tuple val(dbname), path("${dbname}_filtered_removed_sequences.fasta"), path("${dbname}_filtered_removed_sequences.gff") into filtered_genomes
 
     input:
-    tuple val(dbname), path(fasta_file), path(gff_file) from perled_files
+    tuple val(dbname), path(fasta_file), path(gff_file) from perled_files_genes
 
     script:
     """
@@ -73,7 +76,7 @@ process run_split_gff_and_fasta_to_genbank_on_annotations {
 
     input:
     tuple val(dbname), path(gff_file) from filtered_annotations
-    path fasta_file from perled_files[1] // Using index to get fasta_file from the perled_files tuple
+    path fasta_file from perled_files_fastas.map { tuple -> tuple[1] }
 
     script:
     """
