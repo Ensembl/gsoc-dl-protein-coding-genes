@@ -49,7 +49,8 @@ def is_gene(db, start, end, sequence_len, strand, seq_id):
     return 0
 
 
-def process_record(record, index, db, fragment_size, k, classification_mode):
+def process_record(record, index, gff_file, fragment_size, k, classification_mode):
+    db = gffutils.FeatureDB(f'{gff_file}_temp.db')
     sequence = str(record.seq)
     sequence_rev = str(record.seq.reverse_complement())
     sequence_len = len(sequence)
@@ -85,7 +86,7 @@ def process_fasta(fasta_file, gff_file, output_file=None, fragment_size=1000, k=
                for i, record in enumerate(SeqIO.parse(fasta_file, "fasta"))]
 
     with multiprocessing.Pool() as pool:
-        process_func = partial(process_record, db=db, fragment_size=fragment_size,
+        process_func = partial(process_record, gff_file = gff_file, fragment_size=fragment_size,
                                k=k, classification_mode=classification_mode)
         # We now pass tuples (record, index) to the processing function
         fragments = pool.starmap(process_func, records)

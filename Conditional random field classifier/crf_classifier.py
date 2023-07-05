@@ -97,7 +97,7 @@ def evaluate_on_validation_set(y_true, y_pred):
     return metrics
 
 def train_crf_classifier(features_list, labels_list, hyperparameters, labels_test_list, features_test_list, file):
-    trainer = pycrfsuite.Trainer(verbose=False)
+    trainer = pycrfsuite.Trainer(verbose=True)
 
     # Loop over each sequence of features and labels and append them
     for features, labels in zip(features_list, labels_list):
@@ -144,7 +144,7 @@ def hyperparameter_search(features, labels, hyperparameters, labels_test, featur
     best_hyperparameters = hyperparameters_trained[best_index]
     best_performance = f1_scores[best_index]
     all_classifiers_performances = {
-        hyperparameters_trained[index]: performance for index, performance in enumerate(performances)}
+        str(hyperparameters_trained[index]): performance for index, performance in enumerate(performances)}
     
     return best_hyperparameters, best_performance, all_classifiers_performances
 
@@ -167,7 +167,7 @@ def main(file, output_directory):
     c1_values = np.logspace(-3, 3, 3)  # Values for c1
     c2_values = np.logspace(-3, 3, 3)  # Values for c2
     hyperparameters = list(product(c1_values, c2_values))  # All combinations of c1 and c2
-
+    hyperparameters = [[1,1]]
     complete_data = load_data_from_file(file)
     train_data, test_data = split_data(complete_data)
     print("splitted_data")
