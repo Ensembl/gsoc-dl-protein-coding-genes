@@ -52,7 +52,7 @@ def calculate_mean_std(data):
 
     feature_mean_std = {}
     for key, values in all_features.items():
-        feature_mean_std[key] = (np.mean(values), np.std(values))
+        feadescriptionture_mean_std[key] = (np.mean(values), np.std(values))
 
     return feature_mean_std
 
@@ -61,7 +61,7 @@ def extract_features_and_labels(data):
     labels = []
     features = []
     feature_mean_std = calculate_mean_std(data)
-    for sequence in data:       
+    for sequence in data:
         features_sequence = []
         labels_sequence = []
         for dictionary in sequence:
@@ -70,7 +70,7 @@ def extract_features_and_labels(data):
                 if key != 'gene':
                     mean, std = feature_mean_std[key]
                     normalized_value = (value - mean) / std if std > 0 else 0.0
-                    feature_vector.append(f'{key}={normalized_value}') 
+                    feature_vector.append(f'{key}={normalized_value}')
             labels_sequence.append ("gene" if int(dictionary['gene'])==1 else "no-gene")
             features_sequence.append(feature_vector)
         labels.append(labels_sequence)
@@ -97,7 +97,7 @@ def evaluate_on_validation_set(y_true, y_pred):
     return metrics
 
 def train_crf_classifier(features_list, labels_list, hyperparameters, labels_test_list, features_test_list, file):
-    trainer = pycrfsuite.Trainer(verbose=True)
+    trainer = pycrfsuite.Trainer(verbose=False)
 
     # Loop over each sequence of features and labels and append them
     for features, labels in zip(features_list, labels_list):
@@ -111,7 +111,7 @@ def train_crf_classifier(features_list, labels_list, hyperparameters, labels_tes
         'max_iterations': 100,  # maximum number of iterations
         'feature.possible_transitions': True  # include possible transitions
     })
-    
+
     filename_base = os.path.split(file)[1]
     model_filename = f'crf_model_{filename_base}_c1_{c1}_c2_{c2}.crfsuite'
     path_filename = os.path.join(output_directory, model_filename)
@@ -144,8 +144,8 @@ def hyperparameter_search(features, labels, hyperparameters, labels_test, featur
     best_hyperparameters = hyperparameters_trained[best_index]
     best_performance = f1_scores[best_index]
     all_classifiers_performances = {
-        str(hyperparameters_trained[index]): performance for index, performance in enumerate(performances)}
-    
+        hyperparameters_trained[index]: performance for index, performance in enumerate(performances)}
+
     return best_hyperparameters, best_performance, all_classifiers_performances
 
 
@@ -167,7 +167,7 @@ def main(file, output_directory):
     c1_values = np.logspace(-3, 3, 3)  # Values for c1
     c2_values = np.logspace(-3, 3, 3)  # Values for c2
     hyperparameters = list(product(c1_values, c2_values))  # All combinations of c1 and c2
-    hyperparameters = [[1,1]]
+
     complete_data = load_data_from_file(file)
     train_data, test_data = split_data(complete_data)
     print("splitted_data")
@@ -182,11 +182,11 @@ def main(file, output_directory):
         f.write(f'{all_classifiers_performances}')
 
     c1, c2 = hyperparameters
-    
+
     name_classifier_with_best_performance = os.path.join(output_directory, f'crf_model_{filename_base}_c1_{c1}_c2_{c2}.crfsuite')
 
 
-    # Plot everything 
+    # Plot everything
     # Generate true labels and predicted probabilities
     all_y_pred = []
     y_true = []

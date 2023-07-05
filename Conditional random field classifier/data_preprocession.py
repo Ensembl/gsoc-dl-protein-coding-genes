@@ -25,7 +25,7 @@ def count_kmers(sequence, k):
 def is_repetitive(db, start, end, sequence_len, strand, seq_id):
     if strand == -1:
         start, end = sequence_len - end, sequence_len - start
-    
+
     # account for 1 based indexing in gff
     start += 1
     end += 1
@@ -49,8 +49,7 @@ def is_gene(db, start, end, sequence_len, strand, seq_id):
     return 0
 
 
-def process_record(record, index, gff_file, fragment_size, k, classification_mode):
-    db = gffutils.FeatureDB(f'{gff_file}_temp.db')
+def process_record(record, index, db, fragment_size, k, classification_mode):
     sequence = str(record.seq)
     sequence_rev = str(record.seq.reverse_complement())
     sequence_len = len(sequence)
@@ -85,14 +84,33 @@ def process_fasta(fasta_file, gff_file, output_file=None, fragment_size=1000, k=
     records = [(record, i)
                for i, record in enumerate(SeqIO.parse(fasta_file, "fasta"))]
 
-    with multiprocessing.Pool() as pool:
-        process_func = partial(process_record, gff_file = gff_file, fragment_size=fragment_size,
-                               k=k, classification_mode=classification_mode)
-        # We now pass tuples (record, index) to the processing function
-        fragments = pool.starmap(process_func, records)
+    fragments = []
+    if output_file is not None:
+        with open(output_file, 'w') as f:
+            with open(fasta_file, "r") as handle:
+                for record in SeqIO.parse(handle, "fasta"):
+                    print (record)
+                    sequence = str(record.seq)
+                    sequence_rev = str(record.seq.reverse_complement())
+                    sequence_len = len(sequence)
 
-    # Sort by the index we added to maintain the original order
-    fragments.sort(key=lambda x: x[0])
+                    # Processing both normal and reverse complement strands
+                    fragments_in_record = []
+                    for seq, strand in [(sequence, '+'), (sequence_rev, '-')]:
+                        for i in range(0, sequence_len, fragment_size):
+                            start = i
+                            end = i + fragment_size
+                            fragment = seq[start:end]
+                            features = count_kmers(fragment, k)
+                            features['position'] = start
+                            features['relative_position'] = start/sequence_len
+                            features['strand'] = 1 if strand == "+" else -1
+                            features['repetitive'] = is_repetitive(db, start, end, sequence_len, strand, record.id)
+                            if classification_mode == False:
+                                features['gene'] = is_gene(db, start, end, sequence_len, strand, record.id)
+                            fragments_in_record.append(features)
+                    fragments.append(fragments_in_record)
+                    f.write(str(fragments_in_record) + '\n')
 
     with open(output_file, 'w') as f:
         for index, record_id, fragments_in_record in fragments:

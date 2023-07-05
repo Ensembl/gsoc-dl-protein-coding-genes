@@ -1,2 +1,0 @@
-Best performance: 0.0
-Best hyperparameters: c1: {c1} c2:{c2}

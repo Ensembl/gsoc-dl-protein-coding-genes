@@ -1,11 +1,17 @@
 #!/usr/bin/env nextflow
 
 params.output_dir = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/unfiltered_genomes/"
-params.output_dir_filtered_annotations = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/filtered_annotations/"
-params.output_dir_filtered_genomes = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/filtered_genomes/"
-params.output_dir_splitted_files_genomes = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/splitted_files_filtered_genomes/"
-params.output_dir_splitted_files_annotations = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation_separated_by_strand/splitted_files_filtered_annotations/"
+
+params.output_dir_filtered_annotations = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation/filtered_annotations/"
+
+params.output_dir_filtered_genomes = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation/filtered_genomes/"
+
+params.output_dir_splitted_files_genomes = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation/splitted_files_filtered_genomes/"
+
+params.output_dir_splitted_files_annotations = "/hps/nobackup/flicek/ensembl/genebuild/frida/results_with_full_gff_and_repeat_annotation/splitted_files_filtered_annotations/"
+
 params.err_dir = "/hps/nobackup/flicek/ensembl/genebuild/frida/errors_output/"
+
 params.server_list = "/hps/nobackup/flicek/ensembl/genebuild/frida/scripts/server_list.txt"
 
 Channel
