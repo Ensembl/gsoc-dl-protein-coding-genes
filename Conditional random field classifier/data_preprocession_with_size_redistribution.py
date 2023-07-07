@@ -72,7 +72,7 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                     # Split sequences longer than max_length
                     sequences = [sequence[i: i+max_length] for i in range(0, len(sequence), max_length)]
 
-                    with open(output_file_strand, 'w') as f:
+                    with open(output_file_strand, 'a') as f:
                         for seq_idx, seq in enumerate(sequences):
                             fragments_in_record = []
                             for i in range(0, len(seq) - fragment_size + 1, fragment_size):  # Adjusted range
