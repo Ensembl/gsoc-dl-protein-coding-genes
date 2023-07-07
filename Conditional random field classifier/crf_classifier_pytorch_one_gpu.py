@@ -35,8 +35,9 @@ class FileIterator:
         return self.file_iter
 
 class GeneDataset(IterableDataset):
-    def __init__(self, directory):
+    def __init__(self, directory, max_sequence_length=4000):
         self.file_iterator = FileIterator(directory)
+        self.max_sequence_length = max_sequence_length
 
     def __iter__(self):
         for line in self.file_iterator:
@@ -45,7 +46,11 @@ class GeneDataset(IterableDataset):
                 features = {k: v for k, v in data.items() if k != 'gene'}
                 target = data.get('gene', None)
                 if features and target:
-                    yield features, target
+                    # Pad or truncate sequences to the desired length
+                    padded_features = pad_sequence([torch.tensor(f) for f in features.values()], batch_first=True, padding_value=0, total_length=self.max_sequence_length)
+                    padded_target = pad_sequence([torch.tensor(target)], batch_first=True, padding_value=0, total_length=self.max_sequence_length)
+
+                    yield padded_features, padded_target
             except SyntaxError as e:
                 print(f"Skipping line due to error: {e}")
 
