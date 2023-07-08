@@ -16,8 +16,8 @@ from itertools import chain
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve, accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
 from plotting_results import *
 
-# Make sure the device is set to cuda:0 (first GPU)
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# Make sure the device is set to cuda:"0" (first GPU)
+device = torch.device("cuda:"0"" if torch.cuda.is_available() else "cpu")
 print(device)
 
 class FileIterator:
@@ -43,8 +43,8 @@ class GeneDataset(IterableDataset):
         for line in self.file_iterator:
             try:
                 data = ast.literal_eval(line)
-                features = {k: v for k, v in data.items() if k != 'gene'}
-                target = data.get('gene', None)
+                features = {k: float(v) for k, v in data.items() if k != 'gene'}
+                target = int(data.get('gene', None))
                 if features and target:
                     # Pad or truncate sequences to the desired length
                     padded_features = pad_sequence([torch.tensor(f) for f in features.values()], batch_first=True, padding_value=0, total_length=self.max_sequence_length)
