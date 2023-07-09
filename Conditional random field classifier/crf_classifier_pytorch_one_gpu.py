@@ -17,13 +17,13 @@ from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve,
 from plotting_results import *
 
 # Make sure the device is set to cuda:"0" (first GPU)
-device = torch.device("cuda:"0"" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 class FileIterator:
     def __init__(self, directory):
         self.file_paths = [os.path.join(directory, file) for file in sorted(os.listdir(directory))]
-        self.file_iter = chain.from_iterable(self.file_generator())
+        self.file_iter = iter(self.file_generator())
 
     def file_generator(self):
         for file_path in self.file_paths:
@@ -42,16 +42,27 @@ class GeneDataset(IterableDataset):
     def __iter__(self):
         for line in self.file_iterator:
             try:
-                data = ast.literal_eval(line)
-                features = {k: float(v) for k, v in data.items() if k != 'gene'}
-                target = int(data.get('gene', None))
-                if features and target:
+                data_list = json.loads(line)
+                features_list = []
+                target_list = []
+                for data in data_list:
+                    features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
+                    target = parse_number(data.get('gene', None))
+                    if features and target:
+                        features_list.append(torch.tensor([f for f in features.values()]))
+                        target_list.append(torch.tensor(target))
+                if features_list and target_list:
                     # Pad or truncate sequences to the desired length
-                    padded_features = pad_sequence([torch.tensor(f) for f in features.values()], batch_first=True, padding_value=0, total_length=self.max_sequence_length)
-                    padded_target = pad_sequence([torch.tensor(target)], batch_first=True, padding_value=0, total_length=self.max_sequence_length)
+                    padded_features = pad_sequence(features_list, batch_first=True).squeeze()
+                    padded_target = pad_sequence(target_list, batch_first=True).squeeze()
+
+                    if padded_features.size(0) > self.max_sequence_length:
+                        padded_features = padded_features[:self.max_sequence_length]  # Truncate features
+                    if padded_target.size(0) > self.max_sequence_length:
+                        padded_target = padded_target[:self.max_sequence_length]  # Truncate target
 
                     yield padded_features, padded_target
-            except SyntaxError as e:
+            except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
 
 class CRFClassifier(nn.Module):
@@ -74,6 +85,26 @@ class CRFClassifier(nn.Module):
     def loss(self, x, tags):
         features = self.feature_extractor(x)
         return -self.crf(features, tags)
+
+def parse_number(s):
+    # If the string starts with '0.', don't strip the leading zero
+    if s.startswith('0.'):
+        num = float(s)
+    else:
+        stripped = s.lstrip('0')
+
+        # Check if the stripped string is empty (original string was '0' or '00..0')
+        if not stripped:
+            return 0
+        
+        # Try to convert the stripped string to integer or float
+        try:
+            num = int(stripped)
+        except ValueError:
+            # If it's not an integer, try converting to float
+            num = float(stripped)
+
+    return num
 
 def get_model_predictions_and_labels(model, dataloader):
     model.eval()
