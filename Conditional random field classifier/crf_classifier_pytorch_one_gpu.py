@@ -15,6 +15,9 @@ from collections import defaultdict
 from itertools import chain
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve, accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
 from plotting_results import *
+import json
+
+COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
 
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -46,21 +49,29 @@ class GeneDataset(IterableDataset):
                 features_list = []
                 target_list = []
                 for data in data_list:
+                    target = None
+                    fetaures = None
                     features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
-                    target = parse_number(data.get('gene', None))
-                    if features and target:
+                    features = add_combinations_with_N(features)
+                    target = int(data.get('gene', None))
+                    if features and target is not None:
                         features_list.append(torch.tensor([f for f in features.values()]))
-                        target_list.append(torch.tensor(target))
+                        target_list.append(torch.tensor([target]))
                 if features_list and target_list:
-                    # Pad or truncate sequences to the desired length
-                    padded_features = pad_sequence(features_list, batch_first=True).squeeze()
-                    padded_target = pad_sequence(target_list, batch_first=True).squeeze()
-
-                    if padded_features.size(0) > self.max_sequence_length:
-                        padded_features = padded_features[:self.max_sequence_length]  # Truncate features
-                    if padded_target.size(0) > self.max_sequence_length:
-                        padded_target = padded_target[:self.max_sequence_length]  # Truncate target
-
+                    features_list = torch.stack(features_list)
+                    target_list = torch.stack(target_list)
+                    # Pad to max_sequence_length
+                    print(features_list.shape, target_list.shape)
+                    if features_list.size(0) < self.max_sequence_length:
+                        pad_size = self.max_sequence_length - features_list.size(0)
+                        padded_features = F.pad(features_list, (0, pad_size), 'constant', 0)
+                    else:
+                        padded_features = features_list
+                    if target_list.size(0) < self.max_sequence_length:
+                        pad_size = self.max_sequence_length - target_list.size(0)
+                        padded_target = F.pad(target_list, (0, pad_size), 'constant', 0)
+                    else:
+                        padded_target = target_list
                     yield padded_features, padded_target
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
@@ -88,6 +99,8 @@ class CRFClassifier(nn.Module):
 
 def parse_number(s):
     # If the string starts with '0.', don't strip the leading zero
+    if not isinstance(s, str):
+        return s
     if s.startswith('0.'):
         num = float(s)
     else:
@@ -105,6 +118,16 @@ def parse_number(s):
             num = float(stripped)
 
     return num
+
+def add_combinations_with_N(features):
+    """
+    Add combinations with 'N' to the feature dictionary if not already present.
+    """
+
+    for comb in COMBINATIONS_WITH_N:
+        if comb not in features:
+            features[comb] = 0
+    return features
 
 def get_model_predictions_and_labels(model, dataloader):
     model.eval()
