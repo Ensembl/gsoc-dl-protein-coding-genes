@@ -55,6 +55,7 @@ class GeneDataset(IterableDataset):
                     target = None
                     features = None
                     features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
+                    # forgot to add "N" as base option, so adding all combinations with N if they are not present
                     features = add_combinations_with_N(features)
                     if len(features) != 129:
                         print("odd number of features in token")
@@ -99,20 +100,19 @@ class CRFClassifier(nn.Module):
         )
         self.crf = CRF(num_tags, batch_first=True)
 
-    def forward(self, x):
+    def forward(self, x, mask):  # Include the mask tensor as input
         features = self.feature_extractor(x)
-        return features  # Return features
+        return features, mask  # Return features and mask
 
-    def decode(self, x):  # Separate method for decoding
+    def decode(self, x, mask):  # Separate method for decoding
         features = self.feature_extractor(x)
-        return self.crf.decode(features)
+        return self.crf.decode(features, mask)  # Pass the mask tensor to the CRF module
 
-    def loss(self, x, tags):
+    def loss(self, x, tags, mask):  # Include the mask tensor as input
         features = self.feature_extractor(x)
-        # Add class weights to features
         adjusted_features = features + CLASS_WEIGHT.view(1, 1, -1)
 
-        return -self.crf(adjusted_features, tags)
+        return -self.crf(adjusted_features, tags, mask)  # Pass the mask tensor to the CRF module
 
 def parse_number(s):
     # If the string starts with '0.', don't strip the leading zero
@@ -147,17 +147,18 @@ def add_combinations_with_N(features):
     return features
 
 def get_model_predictions_and_labels(model, dataloader):
-    model.eval()  # Set the model to evaluation mode
+    model.eval()
     y_true = []
     y_pred = []
 
     with torch.no_grad():
-        for inputs, labels in dataloader:
-            outputs = model.decode(inputs)  # Use decode method for inference
-            predicted_labels = outputs  # Assuming the output is a tensor of shape (batch_size, num_classes)
+        for inputs, labels, mask in dataloader:  # Include the mask tensor
+            inputs, labels, mask = inputs.to(device), labels.to(device), mask.to(device)
+            outputs = model.decode(inputs, mask)  # Pass the mask tensor to the decode method
+            predicted_labels = outputs
 
-            y_true.extend(labels.tolist())  # Append true labels to y_true list
-            y_pred.extend(predicted_labels)  # Append predicted labels to y_pred list
+            y_true.extend(labels.tolist())
+            y_pred.extend(predicted_labels)
     y_true = flatten_list(y_true)
     y_pred = flatten_list(y_pred)
     return y_true, y_pred
@@ -172,12 +173,12 @@ def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     epoch_losses = []
     for epoch in range(num_epochs):
         total_loss = 0
-        for i, (inputs, tags) in enumerate(train_dataloader):
-            inputs, tags = inputs.to(device), tags.to(device)
+        for i, (inputs, tags, mask) in enumerate(train_dataloader):
+            inputs, tags, mask = inputs.to(device), tags.to(device), mask.to(device)
             optimizer.zero_grad()
             with autocast():
                 tags = tags.squeeze(-1)
-                loss = model.loss(inputs, tags)
+                loss = model.loss(inputs, tags, mask)  # Pass the mask tensor to the loss function
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
