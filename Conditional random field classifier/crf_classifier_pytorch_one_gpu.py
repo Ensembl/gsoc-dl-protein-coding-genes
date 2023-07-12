@@ -19,7 +19,7 @@ from plotting_results import *
 import json
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-CLASS_WEIGHT = torch.tensor([1.0, 10.0])  # example class weights
+CLASS_WEIGHT = torch.tensor([1.0, 100.0])  # example class weights
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -38,6 +38,11 @@ class FileIterator:
 
     def __iter__(self):
         return self.file_iter
+
+class GeneDataset(IterableDataset):
+    def __init__(self, directory, max_sequence_length=4000):
+        self.file_iterator = FileIterator(directory)
+        self.max_sequence_length = max_sequence_length
 
 class GeneDataset(IterableDataset):
     def __init__(self, directory, max_sequence_length=4000):
@@ -72,17 +77,13 @@ class GeneDataset(IterableDataset):
                     mask_list = torch.stack(mask_list)  # Stack the mask tensors
                     if features_list.size(0) < self.max_sequence_length:
                         pad_size = self.max_sequence_length - features_list.size(0)
-                        padded_features = F.pad(features_list, (0, 0, pad_size, 0), 'constant', 0)
+                        padded_features = F.pad(features_list, (0, 0, 0, pad_size), 'constant', 0)
+                        padded_target = F.pad(target_list, (0, pad_size), 'constant', 0)
                         padded_mask = F.pad(mask_list, (0, pad_size), 'constant', 0)  # Pad the mask tensor
                     else:
                         padded_features = features_list
-                        padded_mask = mask_list
-
-                    if target_list.size(0) < self.max_sequence_length:
-                        pad_size = self.max_sequence_length - target_list.size(0)
-                        padded_target = F.pad(target_list, (0, 0, pad_size, 0), 'constant', 0)
-                    else:
                         padded_target = target_list
+                        padded_mask = mask_list
 
                     yield padded_features, padded_target, padded_mask  # Return the mask tensor
             except json.JSONDecodeError as e:
@@ -102,14 +103,17 @@ class CRFClassifier(nn.Module):
 
     def forward(self, x, mask):  # Include the mask tensor as input
         features = self.feature_extractor(x)
+        mask = mask.squeeze(-1)
         return features, mask  # Return features and mask
 
     def decode(self, x, mask):  # Separate method for decoding
         features = self.feature_extractor(x)
+        mask = mask.squeeze(-1)
         return self.crf.decode(features, mask)  # Pass the mask tensor to the CRF module
 
     def loss(self, x, tags, mask):  # Include the mask tensor as input
         features = self.feature_extractor(x)
+        mask = mask.squeeze(-1)
         adjusted_features = features + CLASS_WEIGHT.view(1, 1, -1)
 
         return -self.crf(adjusted_features, tags, mask)  # Pass the mask tensor to the CRF module
@@ -165,7 +169,7 @@ def get_model_predictions_and_labels(model, dataloader):
 
 def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     model = CRFClassifier(input_dim, num_tags).to(device)
-    learning_rate = 0.0001  
+    learning_rate = 0.00001  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scaler = GradScaler()
     batch_losses = []
