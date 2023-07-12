@@ -78,8 +78,8 @@ class GeneDataset(IterableDataset):
                     if features_list.size(0) < self.max_sequence_length:
                         pad_size = self.max_sequence_length - features_list.size(0)
                         padded_features = F.pad(features_list, (0, 0, 0, pad_size), 'constant', 0)
-                        padded_target = F.pad(target_list, (0, pad_size), 'constant', 0)
-                        padded_mask = F.pad(mask_list, (0, pad_size), 'constant', 0)  # Pad the mask tensor
+                        padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', 0)
+                        padded_mask = F.pad(mask_list, (0, 0, 0, pad_size), 'constant', 0)  # Pad the mask tensor
                     else:
                         padded_features = features_list
                         padded_target = target_list
