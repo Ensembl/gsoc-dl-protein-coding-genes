@@ -19,7 +19,7 @@ from plotting_results import *
 import json
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-
+CLASS_WEIGHT = torch.tensor([1.0, 10.0])  # example class weights
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -54,6 +54,7 @@ class GeneDataset(IterableDataset):
                     target = None
                     features = None
                     features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
+                    # forgot to add "N" as base option, so adding all combinations with N if they are not present
                     features = add_combinations_with_N(features)
                     if len(features) != 129:
                         print("odd number of features in token")
@@ -102,7 +103,10 @@ class CRFClassifier(nn.Module):
 
     def loss(self, x, tags):
         features = self.feature_extractor(x)
-        return -self.crf(features, tags)
+        # Add class weights to features
+        adjusted_features = features + CLASS_WEIGHT.view(1, 1, -1)
+
+        return -self.crf(adjusted_features, tags)
 
 def parse_number(s):
     # If the string starts with '0.', don't strip the leading zero
@@ -154,7 +158,7 @@ def get_model_predictions_and_labels(model, dataloader):
 
 def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     model = CRFClassifier(input_dim, num_tags).to(device)
-    learning_rate = 0.001  # Define your learning rate
+    learning_rate = 0.0001  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scaler = GradScaler()
     batch_losses = []
@@ -218,7 +222,7 @@ train_directory = args.train_data_directory
 test_directory = args.test_data_directory
 output_directory = args.output_directory
 
-# Now, to create your datasets:
+# Create datasets:
 train_dataset = GeneDataset(train_directory)
 test_dataset = GeneDataset(test_directory)
 
@@ -238,10 +242,7 @@ plot_loss_curve(epoch_losses, save_path=os.path.join(output_directory, 'training
 # Plot the training batch loss curve
 plot_batch_losses(batch_losses, save_path=os.path.join(output_directory, 'training_batch_loss_curve.png'))
 
-# Assuming you have trained your model and have your dataloader ready:
+#Plot results
 y_true, y_pred = get_model_predictions_and_labels(model, test_dataloader)
-
 print(f"Classification report: {classification_report(y_true, y_pred)}")
-
-# Then you can use the data to plot the graphs:
 plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(output_directory, 'confusion_matrix.png'))
