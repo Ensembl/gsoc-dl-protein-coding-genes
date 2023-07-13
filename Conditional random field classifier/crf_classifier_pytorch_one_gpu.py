@@ -19,7 +19,7 @@ from plotting_results import *
 import json
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-CLASS_WEIGHT = torch.tensor([1.0, 100.0])  # example class weights
+CLASS_WEIGHT = torch.tensor([1.0, 10.0])  # example class weights
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -160,7 +160,7 @@ def get_model_predictions_and_labels(model, dataloader):
             inputs, labels, mask = inputs.to(device), labels.to(device), mask.to(device)
             outputs = model.decode(inputs, mask)  # Pass the mask tensor to the decode method
             predicted_labels = outputs
-
+            labels = labels[mask]
             y_true.extend(labels.tolist())
             y_pred.extend(predicted_labels)
     y_true = flatten_list(y_true)
