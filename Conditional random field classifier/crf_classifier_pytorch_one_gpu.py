@@ -19,7 +19,7 @@ from plotting_results import *
 import json
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-CLASS_WEIGHT = torch.tensor([1.0, 10.0])  # example class weights
+CLASS_WEIGHT = torch.tensor([1.0, 1000.0])  # example class weights
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -63,13 +63,13 @@ class GeneDataset(IterableDataset):
                     # forgot to add "N" as base option, so adding all combinations with N if they are not present
                     features = add_combinations_with_N(features)
                     if len(features) != 129:
-                        print("odd number of features in token")
+                        print("odd number of features in token: {len(features)}")
                         continue
                     target = int(data.get('gene', None))
                     if features and target is not None:
                         features_list.append(torch.tensor([f for f in features.values()]))
                         target_list.append(torch.tensor([target]))
-                        mask_list.append(torch.ones(1, dtype=torch.uint8))  # Add a mask of 1 for the sequence
+                        mask_list.append(torch.ones(1, dtype=torch.bool))  # Add a mask of 1 for the sequence
 
                 if features_list and target_list:
                     features_list = torch.stack(features_list)
@@ -78,8 +78,8 @@ class GeneDataset(IterableDataset):
                     if features_list.size(0) < self.max_sequence_length:
                         pad_size = self.max_sequence_length - features_list.size(0)
                         padded_features = F.pad(features_list, (0, 0, 0, pad_size), 'constant', 0)
-                        padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', 0)
-                        padded_mask = F.pad(mask_list, (0, 0, 0, pad_size), 'constant', 0)  # Pad the mask tensor
+                        padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', -1)
+                        padded_mask = F.pad(mask_list, (0, 0, 0, pad_size), 'constant', False)  # Pad the mask tensor
                     else:
                         padded_features = features_list
                         padded_target = target_list
@@ -169,7 +169,7 @@ def get_model_predictions_and_labels(model, dataloader):
 
 def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     model = CRFClassifier(input_dim, num_tags).to(device)
-    learning_rate = 0.00001  
+    learning_rate = 0.001  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scaler = GradScaler()
     batch_losses = []
