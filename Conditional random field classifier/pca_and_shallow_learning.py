@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import SGDClassifier
 import argparse
 from sklearn.metrics import classification_report
+from plotting_results import *
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN',
                        'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
@@ -153,3 +154,7 @@ for X_test, y_test in test_dataloader:
     y_pred.extend(y_pred_batch.tolist())
 
 print(classification_report(y_true, y_pred))
+
+print(f"Classification report: {classification_report(y_true, y_pred)}")
+plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(
+    output_directory, 'confusion_matrix.png'))
