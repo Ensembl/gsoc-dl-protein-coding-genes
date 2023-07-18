@@ -52,13 +52,11 @@ class GeneDataset(IterableDataset):
                 for data in data_list:
                     target = None
                     features = None
-                    features = {k: self._parse_number(
-                        v) for k, v in data.items() if k != 'gene'}
+                    features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
                     # forgot to add "N" as base option, so adding all combinations with N if they are not present
-                    features = self._add_combinations_with_N(features)
+                    features = add_combinations_with_N(features)
                     if len(features) != 129:
-                        print(
-                            f"odd number of features in token: {len(features)}")
+                        print(f"odd number of features in token: {len(features)}")
                         continue
                     target = int(data.get('gene', None))
                     if target == 1:
@@ -74,8 +72,6 @@ class GeneDataset(IterableDataset):
                         features_list, target_list, batch_count)
                 print (f"Genes in sequence: {genes_in_sequence}")
                 yield features_list, target_list  # Return the mask tensor
-            except json.JSONDecodeError as e:
-                print(f"Skipping line due to error: {e}")
 
     def _transform_and_plot(self, features, targets, batch_count):
         try:
@@ -154,7 +150,7 @@ clf = SGDClassifier(loss="log", penalty="l2", max_iter=1000)
 
 # Train the classifier on the training data
 for X_train, y_train in train_dataloader:
-    clf.partial_fit(X_train, y_train, classes=np.array([0, 1]))
+    clf.partial_fit(X_train.tolist(), y_train.tolist(), classes=np.array([0, 1]))
 
 # Evaluate the classifier on the test data
 y_true, y_pred = [], []
