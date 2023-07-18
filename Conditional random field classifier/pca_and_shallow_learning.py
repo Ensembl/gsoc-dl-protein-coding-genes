@@ -47,6 +47,7 @@ class GeneDataset(IterableDataset):
                 features_list = []
                 target_list = []
                 batch_count +=1
+                genes_in_sequence = 0
                 mask_list = []  # List to store the mask tensors
                 for data in data_list:
                     target = None
@@ -60,29 +61,38 @@ class GeneDataset(IterableDataset):
                             f"odd number of features in token: {len(features)}")
                         continue
                     target = int(data.get('gene', None))
+                    if target == 1:
+                        genes_in_sequence +=1
                     if features and target is not None:
                         features_list.append(
                             [f for f in features.values()])
                         target_list.append([target])
-                    self._transform_and_plot(
+                if len(target_list)<self.max_sequence_length:
+                    print("Small fragment")
+                    continue
+                self._transform_and_plot(
                         features_list, target_list, batch_count)
-                    yield features_list, target_list  # Return the mask tensor
+                print (f"Genes in sequence: {genes_in_sequence}")
+                yield features_list, target_list  # Return the mask tensor
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
 
     def _transform_and_plot(self, features, targets, batch_count):
-        transformed_features = self.pca.fit_transform(features)
-        plt.figure(figsize=(8, 6))
-        plt.scatter(transformed_features[:, 0],
+        try:
+            transformed_features = self.pca.fit_transform(features)
+            plt.figure(figsize=(8, 6))
+            plt.scatter(transformed_features[:, 0],
                     transformed_features[:, 1], c=targets)
-        plt.colorbar()
-        plt.xlabel('Principal Component 1')
-        plt.ylabel('Principal Component 2')
-        plt.title(f'PCA of data for batch {batch_count}')
-        plt.savefig(os.path.join(output_directory, "pca_plots", f"pca_batch_{batch_count}.png"))
-        plt.close()
-        return transformed_features
-
+            plt.colorbar()
+            plt.xlabel('Principal Component 1')
+            plt.ylabel('Principal Component 2')
+            plt.title(f'PCA of data for batch {batch_count}')
+            plt.savefig(os.path.join(output_directory, "pca_plots", f"pca_batch_{batch_count}.png"))
+            plt.close()
+        
+            return transformed_features
+        except:
+            print(features)
 
     def _parse_number(self, s):
         # If the string starts with '0.', don't strip the leading zero
@@ -136,8 +146,8 @@ train_dataset = GeneDataset(train_directory)
 test_dataset = GeneDataset(test_directory)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=1048)
-test_dataloader = DataLoader(test_dataset, batch_size=1048)
+train_dataloader = DataLoader(train_dataset, batch_size=100048)
+test_dataloader = DataLoader(test_dataset, batch_size=100048)
 
 # Create the classifier
 clf = SGDClassifier(loss="log", penalty="l2", max_iter=1000)

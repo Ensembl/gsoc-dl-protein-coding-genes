@@ -19,7 +19,7 @@ from plotting_results import *
 import json
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-CLASS_WEIGHT = torch.tensor([1.0, 1000.0])  # example class weights
+CLASS_WEIGHT = torch.tensor([1.0, 10000.0])  # example class weights
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -47,6 +47,7 @@ class GeneDataset(IterableDataset):
     def __iter__(self):
         for line in self.file_iterator:
             try:
+                number_genes = 0
                 data_list = json.loads(line)
                 features_list = []
                 target_list = []
@@ -61,11 +62,14 @@ class GeneDataset(IterableDataset):
                         print(f"odd number of features in token: {len(features)}")
                         continue
                     target = int(data.get('gene', None))
+                    if target == 1:
+                        number_genes += 1
                     if features and target is not None:
                         features_list.append(torch.tensor([f for f in features.values()]))
                         target_list.append(torch.tensor([target]))
                         mask_list.append(torch.ones(1, dtype=torch.bool))  # Add a mask of 1 for the sequence
 
+                print(f"number of genes: {number_genes}")
                 if features_list and target_list:
                     features_list = torch.stack(features_list)
                     target_list = torch.stack(target_list)
@@ -91,6 +95,10 @@ class SimpleClassifier(nn.Module):
             nn.Linear(input_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
             nn.ReLU(),
             nn.Linear(64, num_tags)
         )
@@ -229,8 +237,8 @@ train_dataset = GeneDataset(train_directory)
 test_dataset = GeneDataset(test_directory)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=64)
-test_dataloader = DataLoader(test_dataset, batch_size=64)
+train_dataloader = DataLoader(train_dataset, batch_size=1048)
+test_dataloader = DataLoader(test_dataset, batch_size=1048)
 
 # Use the SimpleClassifier
 model, epoch_losses, batch_losses = train_simple_classifier(train_dataloader, input_dim=129, num_tags=2, num_epochs=args.epochs) 
