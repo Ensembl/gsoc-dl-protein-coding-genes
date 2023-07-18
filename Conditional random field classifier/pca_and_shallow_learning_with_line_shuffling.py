@@ -154,7 +154,7 @@ train_dataloader = DataLoader(train_dataset, batch_size=100048)
 test_dataloader = DataLoader(test_dataset, batch_size=100048)
 
 # Create the classifier
-clf = SGDClassifier(loss="log", penalty="l2", max_iter=1000)
+clf = SGDClassifier(loss="log_loss", penalty="l2", max_iter=1000)
 
 # Train the classifier on the training data
 batch_count = 0
