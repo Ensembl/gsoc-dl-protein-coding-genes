@@ -10,6 +10,8 @@ from sklearn.linear_model import SGDClassifier
 import argparse
 from sklearn.metrics import classification_report
 from plotting_results import *
+import random
+import linecache
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN',
                        'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
@@ -24,9 +26,13 @@ class FileIterator:
     def file_generator(self):
         for file_path in self.file_paths:
             with open(file_path, 'r') as file:
-                print(file_path)
-                for line in file:
+                line_count = sum(1 for _ in file)
+                line_indices = list(range(1, line_count + 1))
+                random.shuffle(line_indices)  # Shuffling line indices
+                for line_index in line_indices:
+                    line = linecache.getline(file_path, line_index)
                     yield line
+                linecache.clearcache()
 
     def __iter__(self):
         return self.file_iter
