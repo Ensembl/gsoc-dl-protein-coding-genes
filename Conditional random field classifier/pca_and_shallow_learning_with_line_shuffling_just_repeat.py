@@ -54,20 +54,14 @@ class GeneDataset(IterableDataset):
                 target_list = []
                 batch_count +=1
                 genes_in_sequence = 0
+                repeats_in_sequence = 0
                 mask_list = []  # List to store the mask tensors
                 for data in data_list:
                     target = None
                     features = None
-                    features = {k: self._parse_number(v) for k, v in data.items() if k != 'gene'}
-                    if features["strand"] != -1:
-                        if -1 in features.values():
-                            print(f"Weird features: {features}")
-                            continue
-                    # forgot to add "N" as base option, so adding all combinations with N if they are not present
-                    features = self._add_combinations_with_N(features)
-                    if len(features) != 129:
-                        print(f"odd number of features in token: {features}")
-                        continue
+                    features = {k: self._parse_number(v) for k, v in data.items() if k == 'repetitive'}
+                    if features["repetitive"] == 1:
+                        repeats_in_sequence += 1
                     target = int(data.get('gene', None))
                     if target == 1:
                         genes_in_sequence +=1
@@ -78,7 +72,7 @@ class GeneDataset(IterableDataset):
                 if len(target_list)<self.max_sequence_length:
                     print("Small fragment")
                     continue
-                print (f"Genes in sequence: {genes_in_sequence}")
+                print (f"Genes in sequence: {genes_in_sequence}, repeats in sequence: {repeats_in_sequence}")
                 yield features_list, target_list  # Return the mask tensor
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
@@ -164,7 +158,7 @@ precisions = []
 recalls = []
 
 # Test out different weights
-for i in range(0, 6):
+for i in range(0, 1):
     weight = {0: 1, 1: 10 ** i}  # Increasing weight for the second class
     weights.append(weight[1])
 

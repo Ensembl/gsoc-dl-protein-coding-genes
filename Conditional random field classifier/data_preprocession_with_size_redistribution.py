@@ -1,4 +1,5 @@
 import argparse
+import json
 import gffutils
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -10,14 +11,15 @@ def count_kmers(sequence, k):
     d = defaultdict(int)
 
     # Initialize dictionary with all possible k-mers
-    bases = ['A', 'C', 'G', 'T']
+    bases = ['A', 'C', 'G', 'T', "N"]
     all_kmers = [''.join(p) for p in itertools.product(bases, repeat=k)]
     for kmer in all_kmers:
         d[kmer] = 0
 
     # Count k-mers in sequence
     for i in range(len(sequence) - (k-1)):
-        d[sequence[i:i+k]] += 1
+        if sequence[i:i+k] in all_kmers:
+            d[sequence[i:i+k]] += 1
     return dict(d)
 
 def is_repetitive(db, start, end, sequence_len, strand, record):
@@ -27,9 +29,11 @@ def is_repetitive(db, start, end, sequence_len, strand, record):
     # account for 1 based indexing in gff
     start += 1
     end += 1
-    for feature in db.region(region=(record, start, end)):
-        if feature.featuretype == 'repeat':
+    for feature in db.region(region=(seq_id, start, end)):
+        feature_id = feature.attributes.get('ID', None)
+        if feature_id and 'repeat' in feature_id:
             return 1
+
     return 0
 
 def is_gene(db, start, end, sequence_len, strand, record):
@@ -88,14 +92,10 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                                 if classification_mode == False:
                                     features['gene'] = is_gene(db, global_start + start, global_start + end, sequence_len, strand == strand, record.id)
                                 fragments_in_record.append(features)
-                            fragments.append(fragments_in_record)
-                            f.write(str(fragments_in_record) + '\n')
+                            f.write(json.dumps(fragments_in_record) + '\n')
 
     # Remove temporary database
     os.remove(fasta_file+'temp.db')
-
-    return fragments
-
 
 def main():
     parser = argparse.ArgumentParser(description='Process fasta and gff files.')
