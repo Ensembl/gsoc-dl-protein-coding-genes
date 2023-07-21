@@ -226,4 +226,3 @@ plt.title('Effect of Class Weight on Precision and Recall')
 plt.legend()
 plt.savefig(os.path.join(
     output_directory, f'precision_recall_per_weight.png'), dpi=900)
-plt.show()

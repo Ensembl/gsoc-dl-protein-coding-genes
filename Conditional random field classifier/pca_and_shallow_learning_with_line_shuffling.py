@@ -12,6 +12,8 @@ from sklearn.linear_model import SGDClassifier
 import argparse
 from sklearn.metrics import classification_report
 from plotting_results import *
+from sklearn.metrics import precision_score, recall_score
+import matplotlib.pyplot as plt
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN',
                        'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
@@ -156,50 +158,75 @@ test_dataset = GeneDataset(test_directory)
 train_dataloader = DataLoader(train_dataset, batch_size=1048)
 test_dataloader = DataLoader(test_dataset, batch_size=1048)
 
-# Create the classifier
-clf = SGDClassifier(loss="modified_huber", penalty="l2", max_iter=1000)
+# Initialize lists to store results
+weights = []
+precisions = []
+recalls = []
 
-# Train the classifier on the training data
-batch_count = 0
-for X_train, y_train in train_dataloader:
-    X_train = [[element.tolist() for element in inner_list] for inner_list  in X_train]
-    y_train = [[element.tolist() for element in inner_list] for inner_list in y_train]
-    # Convert y_train to a numpy array and flatten it
-    y_train = np.array(y_train)
-    print("Shape of y_train before reshaping: ", np.array(y_train).shape)
+# Test out different weights
+for i in range(0, 5):
+    weight = {0: 1, 1: 10 ** i}  # Increasing weight for the second class
+    weights.append(weight[1])
 
-    y_train = y_train.flatten()
-    X_train = np.array(X_train)
-    print("Shape of X_train before reshaping: ", np.array(X_train).shape)
+    # Create the classifier
+    clf = SGDClassifier(loss="modified_huber", penalty="l2",
+                        max_iter=1000, class_weight=weight)
 
-    X_train = np.reshape(X_train, (-1, X_train.shape[1]))
-    transform_and_plot(X_train, y_train, batch_count)
-    clf.partial_fit(X_train, y_train, classes=np.array([0, 1]))
-    batch_count += 1
+    # Train the classifier on the training data
+    batch_count = 0
+    for X_train, y_train in train_dataloader:
+        X_train = [[element.tolist() for element in inner_list]
+                   for inner_list in X_train]
+        y_train = [[element.tolist() for element in inner_list]
+                   for inner_list in y_train]
+        # Convert y_train to a numpy array and flatten it
+        y_train = np.array(y_train)
+        y_train = y_train.flatten()
+        X_train = np.array(X_train)
+        X_train = np.reshape(X_train, (-1, X_train.shape[1]))
+        transform_and_plot(X_train, y_train, batch_count)
+        clf.partial_fit(X_train, y_train, classes=np.array([0, 1]))
+        batch_count += 1
 
-# Evaluate the classifier on the test data
-y_true, y_pred = [], []
-print(test_dataloader)
-for X_test, y_test in test_dataloader:
-    X_test = [[element.tolist() for element in inner_list] for inner_list  in X_test]
-    y_test = [[element.tolist() for element in inner_list] for inner_list in y_test]
-    # Convert y_train to a numpy array and flatten it
-    y_test = np.array(y_test)
-    print("Shape of y_test before reshaping: ", np.array(y_test).shape)
+    # Evaluate the classifier on the test data
+    y_true, y_pred = [], []
+    for X_test, y_test in test_dataloader:
+        X_test = [[element.tolist() for element in inner_list]
+                  for inner_list in X_test]
+        y_test = [[element.tolist() for element in inner_list]
+                  for inner_list in y_test]
+        # Convert y_train to a numpy array and flatten it
+        y_test = np.array(y_test)
+        y_test = y_test.flatten()
+        X_test = np.array(X_test)
+        X_test = np.reshape(X_test, (-1, X_test.shape[1]))
+        y_pred_batch = clf.predict(X_test)
+        if len(y_true) == len(y_pred):
+            y_true.extend(y_test.tolist())
+            y_pred.extend(y_pred_batch.tolist())
 
-    y_test = y_test.flatten()
-    X_test = np.array(X_test)
-    print("Shape of X_test before reshaping: ", np.array(X_test).shape)
+    # Calculate and store precision and recall
+    precision = precision_score(y_true, y_pred, pos_label=1)
+    recall = recall_score(y_true, y_pred, pos_label=1)
+    precisions.append(precision)
+    recalls.append(recall)
 
-    X_test = np.reshape(X_test, (-1, X_test.shape[1]))
+    print(
+        f"Classification report {weight}: {classification_report(y_true, y_pred)}")
+    plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(
+        output_directory, f'{weight[0]}_confusion_matrix.png'))
 
-    y_pred_batch = clf.predict(X_test)
-    if len(y_true) == len(y_pred):
-        y_true.extend(y_test.tolist())
-        y_pred.extend(y_pred_batch.tolist())
+# Plot precision and recall for different weights
+plt.figure(figsize=(12, 6))
 
-print(classification_report(y_true, y_pred))
+plt.plot(weights, precisions, marker='o',
+         linestyle='-', color='b', label='Precision')
+plt.plot(weights, recalls, marker='o',
+         linestyle='-', color='r', label='Recall')
 
-print(f"Classification report: {classification_report(y_true, y_pred)}")
-plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(
-    output_directory, 'confusion_matrix.png'))
+plt.xlabel('Weight for second class')
+plt.ylabel('Score')
+plt.title('Effect of Class Weight on Precision and Recall')
+plt.legend()
+plt.savefig(os.path.join(
+    output_directory, f'precision_recall_per_weight.png'), dpi=900)
