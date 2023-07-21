@@ -1,3 +1,5 @@
+import random
+import linecache
 import os
 import numpy as np
 import json
@@ -10,12 +12,9 @@ from sklearn.linear_model import SGDClassifier
 import argparse
 from sklearn.metrics import classification_report
 from plotting_results import *
-import random
-import linecache
 
 COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN',
                        'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-
 
 class FileIterator:
     def __init__(self, directory):
@@ -36,7 +35,6 @@ class FileIterator:
 
     def __iter__(self):
         return self.file_iter
-
 
 class GeneDataset(IterableDataset):
     def __init__(self, directory, max_sequence_length=4000):
@@ -59,10 +57,14 @@ class GeneDataset(IterableDataset):
                     target = None
                     features = None
                     features = {k: self._parse_number(v) for k, v in data.items() if k != 'gene'}
+                    if features["strand"] != -1:
+                        if -1 in features.values():
+                            print(f"Weird features: {features}")
+                            continue
                     # forgot to add "N" as base option, so adding all combinations with N if they are not present
                     features = self._add_combinations_with_N(features)
                     if len(features) != 129:
-                        print(f"odd number of features in token: {len(features)}")
+                        print(f"odd number of features in token: {features}")
                         continue
                     target = int(data.get('gene', None))
                     if target == 1:
@@ -128,8 +130,9 @@ def transform_and_plot(features, targets, batch_count):
             plt.close()
 
             return transformed_features
-        except:
-            print(features)
+        except Exception as e:
+            print("An error occurred: ", str(e))
+            print("Features at the time of error: ", features)
 
 parser = argparse.ArgumentParser(description='Run the CRF classifier.')
 parser.add_argument('train_data_directory', help='The train_data_directory.')
@@ -150,25 +153,50 @@ train_dataset = GeneDataset(train_directory)
 test_dataset = GeneDataset(test_directory)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=100048)
-test_dataloader = DataLoader(test_dataset, batch_size=100048)
+train_dataloader = DataLoader(train_dataset, batch_size=1048)
+test_dataloader = DataLoader(test_dataset, batch_size=1048)
 
 # Create the classifier
-clf = SGDClassifier(loss="log_loss", penalty="l2", max_iter=1000)
+clf = SGDClassifier(loss="modified_huber", penalty="l2", max_iter=1000)
 
 # Train the classifier on the training data
 batch_count = 0
 for X_train, y_train in train_dataloader:
-    clf.partial_fit(X_train.tolist(), y_train.tolist(), classes=np.array([0, 1]))
+    X_train = [[element.tolist() for element in inner_list] for inner_list  in X_train]
+    y_train = [[element.tolist() for element in inner_list] for inner_list in y_train]
+    # Convert y_train to a numpy array and flatten it
+    y_train = np.array(y_train)
+    print("Shape of y_train before reshaping: ", np.array(y_train).shape)
+
+    y_train = y_train.flatten()
+    X_train = np.array(X_train)
+    print("Shape of X_train before reshaping: ", np.array(X_train).shape)
+
+    X_train = np.reshape(X_train, (-1, X_train.shape[1]))
     transform_and_plot(X_train, y_train, batch_count)
+    clf.partial_fit(X_train, y_train, classes=np.array([0, 1]))
     batch_count += 1
 
 # Evaluate the classifier on the test data
 y_true, y_pred = [], []
+print(test_dataloader)
 for X_test, y_test in test_dataloader:
+    X_test = [[element.tolist() for element in inner_list] for inner_list  in X_test]
+    y_test = [[element.tolist() for element in inner_list] for inner_list in y_test]
+    # Convert y_train to a numpy array and flatten it
+    y_test = np.array(y_test)
+    print("Shape of y_test before reshaping: ", np.array(y_test).shape)
+
+    y_test = y_test.flatten()
+    X_test = np.array(X_test)
+    print("Shape of X_test before reshaping: ", np.array(X_test).shape)
+
+    X_test = np.reshape(X_test, (-1, X_test.shape[1]))
+
     y_pred_batch = clf.predict(X_test)
-    y_true.extend(y_test.tolist())
-    y_pred.extend(y_pred_batch.tolist())
+    if len(y_true) == len(y_pred):
+        y_true.extend(y_test.tolist())
+        y_pred.extend(y_pred_batch.tolist())
 
 print(classification_report(y_true, y_pred))
 
