@@ -29,7 +29,7 @@ def is_repetitive(db, start, end, sequence_len, strand, record):
     # account for 1 based indexing in gff
     start += 1
     end += 1
-    for feature in db.region(region=(seq_id, start, end)):
+    for feature in db.region(region=(record, start, end)):
         feature_id = feature.attributes.get('ID', None)
         if feature_id and 'repeat' in feature_id:
             return 1
