@@ -29,9 +29,11 @@ def is_repetitive(db, start, end, sequence_len, strand, record):
     # account for 1 based indexing in gff
     start += 1
     end += 1
+    print(start, end, strand)
     for feature in db.region(region=(record, start, end)):
-        feature_id = feature.attributes.get('ID', None)
+        feature_id = feature.attributes.get('ID', None)[0]
         if feature_id and 'repeat' in feature_id:
+            print ("found repeat")
             return 1
 
     return 0
@@ -54,11 +56,16 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                             keep_order=True, merge_strategy='merge',
                             sort_attribute_values=True)
 
+
     fragments = []
     if output_file is not None:
         # Define output files for forward and reverse strands
         output_file_forward = output_file.rsplit('.', 1)[0] + '_forward.' + output_file.rsplit('.', 1)[1]
         output_file_reverse = output_file.rsplit('.', 1)[0] + '_reverse.' + output_file.rsplit('.', 1)[1]
+        if output_file_forward is not None and os.path.exists(output_file_forward):
+            os.remove(output_file_forward)
+        if output_file_reverse is not None and os.path.exists(output_file_reverse):
+            os.remove(output_file_reverse)
 
         with open(fasta_file, "r") as handle:
             for record in SeqIO.parse(handle, "fasta"):
@@ -88,9 +95,9 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                                 features['position'] = global_start + start  # Position in the original sequence
                                 features['relative_position'] = (global_start + start) / sequence_len
                                 features['strand'] = strand  # Forward strand = 1, Reverse strand = -1
-                                features['repetitive'] = is_repetitive(db, global_start + start, global_start + end, sequence_len, strand == strand, record.id)
+                                features['repetitive'] = is_repetitive(db, global_start + start, global_start + end, sequence_len,  strand, record.id)
                                 if classification_mode == False:
-                                    features['gene'] = is_gene(db, global_start + start, global_start + end, sequence_len, strand == strand, record.id)
+                                    features['gene'] = is_gene(db, global_start + start, global_start + end, sequence_len, strand, record.id)
                                 fragments_in_record.append(features)
                             f.write(json.dumps(fragments_in_record) + '\n')
 
