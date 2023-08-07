@@ -59,9 +59,9 @@ class GeneDataset(IterableDataset):
                 for data in data_list:
                     target = None
                     features = None
-                    features = {k: parse_number(v) for k, v in data.items() if k != 'gene'}
+                    features = {k: parse_number(v)/250 for k, v in data.items() if k != 'gene'}
                     # forgot to add "N" as base option, so adding all combinations with N if they are not present
-                    features = add_combinations_with_N(features)
+                    #features = add_combinations_with_N(features)
                     if len(features) != 129:
                         print("odd number of features in token: {len(features)}")
                         continue

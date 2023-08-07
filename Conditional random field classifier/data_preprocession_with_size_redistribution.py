@@ -31,8 +31,8 @@ def is_repetitive(db, start, end, sequence_len, strand, record):
     end += 1
     print(start, end, strand)
     for feature in db.region(region=(record, start, end)):
-        feature_id = feature.attributes.get('ID', None)[0]
-        if feature_id and 'repeat' in feature_id:
+        feature_id = feature.attributes.get('ID', None)
+        if feature_id and 'repeat' in feature_id[0]:
             print ("found repeat")
             return 1
 
@@ -46,7 +46,19 @@ def is_gene(db, start, end, sequence_len, strand, record):
     start += 1
     end += 1
     for feature in db.region(region=(record, start, end)):
-        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality' or feature.featuretype == 'exon') and (feature.strand == strand or feature.strand == alternative_strand):
+        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality') and (feature.strand == strand or feature.strand == alternative_strand):
+            return 1
+    return 0
+
+def is_exon(db, start, end, sequence_len, strand, record):
+    if strand == -1:
+        start, end = sequence_len - end, sequence_len - start
+    alternative_strand = "+" if strand == 1 else "-"
+    # account for 1 based indexing in gff
+    start += 1
+    end += 1
+    for feature in db.region(region=(record, start, end)):
+        if (feature.featuretype == 'exon') and (feature.strand == strand or feature.strand == alternative_strand):
             return 1
     return 0
 
@@ -98,6 +110,8 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                                 features['repetitive'] = is_repetitive(db, global_start + start, global_start + end, sequence_len,  strand, record.id)
                                 if classification_mode == False:
                                     features['gene'] = is_gene(db, global_start + start, global_start + end, sequence_len, strand, record.id)
+                                if classification_mode == False:
+                                    features['exon'] = is_exon(db, global_start + start, global_start + end, sequence_len, strand, record.id)
                                 fragments_in_record.append(features)
                             f.write(json.dumps(fragments_in_record) + '\n')
 
