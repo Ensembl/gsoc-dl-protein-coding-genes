@@ -1,31 +1,22 @@
-import torch
-from sklearn.metrics import classification_report
-import torch.optim as optim
-from torchcrf import CRF
-from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset, DataLoader, IterableDataset
-from torch.nn import functional as F
-from torch import nn
-from torch.cuda.amp import autocast, GradScaler
-from datetime import datetime
 import os
-import ast
-from torch.utils.tensorboard import SummaryWriter
+import torch
 import random
+import json
 import linecache
 import argparse
+from datetime import datetime
 import numpy as np
-from sklearn.model_selection import train_test_split
-from collections import defaultdict
-from itertools import chain
-from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve, accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score
-from plotting_results import *
+import torch.optim as optim
+from torch import nn
+from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import  DataLoader, IterableDataset
+from torch.nn import functional as F
+from torch.utils.tensorboard import SummaryWriter
 import torch.nn.init as init
-from sklearn.decomposition import PCA
 from torch.optim.lr_scheduler import StepLR
-import torch
-import torch.nn.functional as F
-import json
+from sklearn.metrics import classification_report
+from sklearn.decomposition import PCA
+from plotting_results import *
 
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -114,7 +105,6 @@ class GeneDataset(IterableDataset):
                         padded_features = features_list
                         padded_target = target_list
                         padded_mask = mask_list
-                    #print(exons)
                     yield padded_features, padded_target, padded_mask  # Return the mask tensor
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
@@ -122,7 +112,7 @@ class GeneDataset(IterableDataset):
 
 class LSTMClassifier(nn.Module):
     # Increased hidden dimensions, layers, and removed dropout
-    def __init__(self, input_dim, num_tags, hidden_dim=256, num_layers=3, dropout_prob=0.0):
+    def __init__(self, input_dim, num_tags, hidden_dim=256, num_layers=3, dropout_prob=0.1):
         super(LSTMClassifier, self).__init__()
 
         # Define a multi-layer, bidirectional LSTM
@@ -180,23 +170,21 @@ def f_beta_loss(y_pred, y_true, beta=1):
 
     precision = tp / (tp + fp + 1e-5)
     recall = tp / (tp + fn + 1e-5)
-    print(precision, recall)
+    print(f"Precision:{precision}, Recall: {recall}")
     # Calculating F-beta score
     f_beta = (1 + beta**2) * (precision * recall) / \
         (beta**2 * precision + recall + 1e-5)
-    return 1 - f_beta.mean()
+    return 1 - f_beta.mean(), precision, recall
 
 def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     model = LSTMClassifier(input_dim, num_tags).to(device)
     learning_rate = 0.001
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    #weights = torch.tensor([1.0, 25.0], dtype=torch.float32).to(device)
-    #loss_function = nn.CrossEntropyLoss(weight=weights)
-
     # Define the scheduler
     # Update every 10 epochs with decay factor 0.1
     scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
-    beta_value = 0.5
+    # The beta value defines the ration of precision and recall of the underrepresented class to be used (smaller for higher precision)
+    beta_value = 2
     batch_losses = []
     epoch_losses = []
     exons_per_batch = []
@@ -204,12 +192,15 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
 
     for epoch in range(num_epochs):
         total_loss = 0
+        skipped_batches = 0
         for i, (inputs, tags, mask) in enumerate(train_dataloader):
-
+            
             inputs, tags, mask = filter_inputs_with_threshold_targets(
                 inputs, tags.squeeze(-1), mask.squeeze(-1))
             if torch.sum(tags == 1).item() == 0:
+                skipped_batches += 1
                 continue
+            # In first epoch, plot PCAs for all batches
             if epoch == 0:
                 inputs_numpy = inputs.cpu().numpy()  # Convert the inputs tensor to a NumPy array
                 tags_numpy = tags.cpu().numpy()     # Convert the tags tensor to a NumPy array
@@ -219,15 +210,19 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
                 tags_flatten = tags_numpy.flatten()
 
                 transform_and_plot(inputs_reshaped, tags_flatten, i)
+
             inputs, tags = inputs.to(device), tags.to(device)
             mask = mask.to(device)
 
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = f_beta_loss(outputs[mask], tags[mask], beta=beta_value)
+            loss, precision, recall = f_beta_loss(
+                outputs[mask], tags[mask], beta=beta_value)
             loss.backward()
 
-            writer.add_scalar('loss', loss, epoch)
+            writer.add_scalar('loss', loss, i)
+            writer.add_scalar('precision', precision, i)
+            writer.add_scalar('recall', recall, i)
 
             optimizer.step()
             total_loss += loss.item()
@@ -235,7 +230,7 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
             print(loss.item())
             print(f'Exons: {torch.sum(tags == 1).item()}')
             exons_per_batch.append(torch.sum(tags == 1).item())
-        avg_loss = total_loss / (i+1)
+        avg_loss = total_loss / (i+1 - skipped_batches)
         print(f"Epoch {epoch+1}: Loss = {avg_loss}")
         epoch_losses.append(avg_loss)
         scheduler.step()
@@ -243,7 +238,7 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     return model, epoch_losses, batch_losses  # return losses along with the model
 
 
-def filter_inputs_with_threshold_targets(inputs, targets, mask, threshold=100):
+def filter_inputs_with_threshold_targets(inputs, targets, mask, threshold=150):
     # Count the number of occurrences of '1' in each row of the targets
     rows_with_more_than_threshold_ones = (targets == 1).sum(dim=1) > threshold
 
@@ -310,13 +305,26 @@ test_directory = args.test_data_directory
 output_directory = args.output_directory
 mode = args.mode
 
+# Create Output directory
+if not os.path.exists(output_directory):
+    os.makedirs(output_directory)
+    print(f"Directory {output_directory} created.")
+else:
+    print(f"Directory {output_directory} already exists.")
+
+if not os.path.exists(os.path.join(output_directory, "pca_plots")):
+    os.makedirs(os.path.join(output_directory, "pca_plots"))
+    print(f"Directory {os.path.join(output_directory, 'pca_plots')} created.")
+else:
+    print(f"Directory {os.path.join(output_directory, 'pca_plots')} already exists.")
+
 # Create datasets:
 train_dataset = GeneDataset(train_directory, mode=mode, shuffle=True)
 test_dataset = GeneDataset(test_directory, mode=mode, shuffle=False)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=64)
-test_dataloader = DataLoader(test_dataset, batch_size=64)
+train_dataloader = DataLoader(train_dataset, batch_size=128)
+test_dataloader = DataLoader(test_dataset, batch_size=128)
 
 # Train the model and get the losses for each epoch
 model, epoch_losses, batch_losses = train_lstm_classifier(
