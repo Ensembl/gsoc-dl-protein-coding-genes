@@ -58,7 +58,7 @@ class GeneDataset(IterableDataset):
                 for data in data_list:
                     target = None
                     features = None
-                    features = {k: self._parse_number(v)/250 for k, v in data.items() if k != 'gene'}
+                    features = {k: self._parse_number(v)/25 for k, v in data.items() if k != 'gene'}
                     if features["strand"] != -1:
                         if -1 in features.values():
                             print(f"Weird features: {features}")

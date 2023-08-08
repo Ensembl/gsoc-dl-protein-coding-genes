@@ -29,11 +29,9 @@ def is_repetitive(db, start, end, sequence_len, strand, record):
     # account for 1 based indexing in gff
     start += 1
     end += 1
-    print(start, end, strand)
     for feature in db.region(region=(record, start, end)):
         feature_id = feature.attributes.get('ID', None)
         if feature_id and 'repeat' in feature_id[0]:
-            print ("found repeat")
             return 1
 
     return 0
@@ -46,7 +44,7 @@ def is_gene(db, start, end, sequence_len, strand, record):
     start += 1
     end += 1
     for feature in db.region(region=(record, start, end)):
-        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality') and (feature.strand == strand or feature.strand == alternative_strand):
+        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality') and (str(feature.strand) == str(strand) or feature.strand == alternative_strand):
             return 1
     return 0
 

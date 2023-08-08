@@ -7,8 +7,12 @@ from torch.utils.data import Dataset, DataLoader, IterableDataset
 from torch.nn import functional as F
 from torch import nn
 from torch.cuda.amp import autocast, GradScaler
+from datetime import datetime
 import os
 import ast
+from torch.utils.tensorboard import SummaryWriter
+import random
+import linecache
 import argparse
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -18,30 +22,49 @@ from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_curve,
 from plotting_results import *
 import json
 
-COMBINATIONS_WITH_N = ['AAN', 'ATN', 'AGN', 'ACN', 'ANA', 'ANT', 'ANG', 'ANC', 'ANN', 'TAN', 'TTN', 'TGN', 'TCN', 'TNA', 'TNT', 'TNG', 'TNC', 'TNN', 'GAN', 'GTN', 'GGN', 'GCN', 'GNA', 'GNT', 'GNG', 'GNC', 'GNN', 'CAN', 'CTN', 'CGN', 'CCN', 'CNA', 'CNT', 'CNG', 'CNC', 'CNN', 'NAA', 'NAT', 'NAG', 'NAC', 'NAN', 'NTA', 'NTT', 'NTG', 'NTC', 'NTN', 'NGA', 'NGT', 'NGG', 'NGC', 'NGN', 'NCA', 'NCT', 'NCG', 'NCC', 'NCN', 'NNA', 'NNT', 'NNG', 'NNC', 'NNN']
-CLASS_WEIGHT = torch.tensor([1.0, 1000.0])  # example class weights
+
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+CLASS_WEIGHT = torch.tensor([1.0, 1000.0]).to(device)
 print(device)
 
 class FileIterator:
-    def __init__(self, directory):
-        self.file_paths = [os.path.join(directory, file) for file in sorted(os.listdir(directory))]
+    def __init__(self, directory, shuffle=True):
+        self.shuffle = shuffle
+        self.file_paths = [os.path.join(directory, file)
+                           for file in sorted(os.listdir(directory))]
         self.file_iter = iter(self.file_generator())
 
     def file_generator(self):
-        for file_path in self.file_paths:
-            with open(file_path, 'r') as file:
-                print (file_path)
-                for line in file:
-                    yield line
+        if self.shuffle:
+            for file_path in self.file_paths:
+                print(file_path)
+                with open(file_path, 'r') as file:
+                    line_count = sum(1 for _ in file)
+                    line_indices = list(range(1, line_count + 1))
+                    random.shuffle(line_indices)  # Shuffling line indices
+                    for line_index in line_indices:
+                        line = linecache.getline(file_path, line_index)
+                        yield line
+                    linecache.clearcache()
+        else:
+            for file_path in self.file_paths:
+                with open(file_path, 'r') as file:
+                    print (file_path)
+                    for line in file:
+                        yield line
+
 
     def __iter__(self):
-        return self.file_iter
+        return iter(self.file_generator())
+
 class GeneDataset(IterableDataset):
-    def __init__(self, directory, max_sequence_length=4000):
-        self.file_iterator = FileIterator(directory)
+    def __init__(self, directory, max_sequence_length=4000, mode='gene', shuffle=True):
+        self.shuffle = shuffle
+        self.file_iterator = FileIterator(directory, shuffle= self.shuffle)
         self.max_sequence_length = max_sequence_length
+        self.mode = mode
 
     def __iter__(self):
         for line in self.file_iterator:
@@ -50,18 +73,29 @@ class GeneDataset(IterableDataset):
                 features_list = []
                 target_list = []
                 mask_list = []  # List to store the mask tensors
+                exons = 0
                 for data in data_list:
                     target = None
                     features = None
-                    features = {k: parse_number(v)/250 for k, v in data.items() if k != 'gene'}
+                    features = {k: parse_number(
+                        v)/25 for k, v in data.items() if k != 'gene' and k != 'exon'}
                     # forgot to add "N" as base option, so adding all combinations with N if they are not present
                     #features = add_combinations_with_N(features)
                     if len(features) != 129:
-                        print("odd number of features in token: {len(features)}")
+                        print(f"odd number of features in token: {len(features)}")
+                        # mask this value
+                        features_list.append(torch.ones(129, dtype=torch.bool))
+                        target_list.append(torch.tensor([0]))
+                        mask_list.append(torch.ones(0, dtype=torch.bool))
                         continue
-                    target = int(data.get('gene', None))
+
+                    target = int(data.get(self.mode, None))
+                    if target == 1:
+                        exons +=1
+
                     if features and target is not None:
-                        features_list.append(torch.tensor([f for f in features.values()]))
+                        features_list.append(torch.tensor(
+                            [f for f in features.values()], dtype=torch.float32))
                         target_list.append(torch.tensor([target]))
                         mask_list.append(torch.ones(1, dtype=torch.bool))  # Add a mask of 1 for the sequence
 
@@ -78,40 +112,48 @@ class GeneDataset(IterableDataset):
                         padded_features = features_list
                         padded_target = target_list
                         padded_mask = mask_list
-
+                    #print(exons)
                     yield padded_features, padded_target, padded_mask  # Return the mask tensor
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
 
+
 class CRFClassifier(nn.Module):
-    def __init__(self, input_dim, num_tags):
+    def __init__(self, input_dim, num_tags, hidden_dim=128):
         super(CRFClassifier, self).__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, num_tags)
+            nn.LSTM(input_dim, hidden_dim,
+                    bidirectional=True, batch_first=True),
+            # Times 2 because of bidirectionality
+            nn.Linear(hidden_dim * 2, num_tags)
         )
         self.crf = CRF(num_tags, batch_first=True)
 
-    def forward(self, x, mask):  # Include the mask tensor as input
-        features = self.feature_extractor(x)
+    def forward(self, x, mask):
+        # LSTM returns (output, (h_n, c_n)), only need output
+        x, _ = self.feature_extractor[0](x)
+        features = self.feature_extractor[1](x)
         mask = mask.squeeze(-1)
-        return features, mask  # Return features and mask
+        return features, mask
 
-    def decode(self, x, mask):  # Separate method for decoding
-        features = self.feature_extractor(x)
+    def decode(self, x, mask):
+        x, _ = self.feature_extractor[0](x)
+        features = self.feature_extractor[1](x)
         mask = mask.squeeze(-1)
-        return self.crf.decode(features, mask)  # Pass the mask tensor to the CRF module
+        return self.crf.decode(features, mask)
 
-    def loss(self, x, tags, mask):  # Include the mask tensor as input
-        features = self.feature_extractor(x)
+    def loss(self, x, tags, mask):
+        #print(x)
+        x, _ = self.feature_extractor[0](x)
+        features = self.feature_extractor[1](x)
+        #print(features)
         mask = mask.squeeze(-1)
-        adjusted_features = features + CLASS_WEIGHT.view(1, 1, -1)
+        #adjusted_features = features + CLASS_WEIGHT.view(1, 1, -1)
+        adjusted_features = features
+        #print(adjusted_features)
+        return -self.crf(adjusted_features, tags, mask)
 
-        return -self.crf(adjusted_features, tags, mask)  # Pass the mask tensor to the CRF module
-    
+
 def parse_number(s):
     # If the string starts with '0.', don't strip the leading zero
     if not isinstance(s, str):
@@ -134,16 +176,6 @@ def parse_number(s):
 
     return num
 
-def add_combinations_with_N(features):
-    """
-    Add combinations with 'N' to the feature dictionary if not already present.
-    """
-
-    for comb in COMBINATIONS_WITH_N:
-        if comb not in features:
-            features[comb] = 0
-    return features
-
 def get_model_predictions_and_labels(model, dataloader):
     model.eval()
     y_true = []
@@ -159,26 +191,49 @@ def get_model_predictions_and_labels(model, dataloader):
             y_pred.extend(predicted_labels)
     y_true = flatten_list(y_true)
     y_pred = flatten_list(y_pred)
+    model.train()
     return y_true, y_pred
 
 def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     model = CRFClassifier(input_dim, num_tags).to(device)
-    learning_rate = 0.001  
+    learning_rate = 0.1  
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scaler = GradScaler()
     batch_losses = []
-    # Create a list to store the loss at each epoch
     epoch_losses = []
+    writer = SummaryWriter()
     for epoch in range(num_epochs):
         total_loss = 0
         for i, (inputs, tags, mask) in enumerate(train_dataloader):
             inputs, tags, mask = inputs.to(device), tags.to(device), mask.to(device)
-            optimizer.zero_grad()
+
+            
             with autocast():
                 tags = tags.squeeze(-1)
+                print_nan_details(inputs, 'Inputs')
+                print_nan_details(tags, 'Tags')
+                print_nan_details(mask, 'Mask')
                 loss = model.loss(inputs, tags, mask)  # Pass the mask tensor to the loss function
+
             scaler.scale(loss).backward()
+            for name, param in model.crf.named_parameters():
+                print(name, param.data, param.grad)
+                writer.add_histogram(
+                    name + '_grad', param.grad, global_step=i)
+                writer.add_histogram(
+                    name + '_data', param.data, global_step=i)
+                writer.add_scalar('loss', loss, epoch)
+                y_true, y_pred = get_model_predictions_and_labels(
+                    model, test_dataloader)
+                accuracy = calculate_accuracy(y_true, y_pred)
+                writer.add_scalar('accuracy', accuracy, i)
+                writer.add_scalar('accuracy', accuracy, i)
+                writer.add_graph(model, (inputs, mask))
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    writer.add_histogram(name, param.data, i)
             scaler.step(optimizer)
+            optimizer.zero_grad()
             scaler.update()
             total_loss += loss.item()
             batch_losses.append(loss.item())
@@ -187,26 +242,8 @@ def train_crf_classifier(train_dataloader, input_dim, num_tags, num_epochs):
         avg_loss = total_loss / (i+1)
         print(f"Epoch {epoch+1}: Loss = {avg_loss}")
         epoch_losses.append(avg_loss)
-
+    writer.close()
     return model, epoch_losses, batch_losses  # return losses along with the model
-
-def plot_loss_curve(epoch_losses, save_path=None):
-    plt.plot(epoch_losses)
-    plt.title('Training Loss Curve')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    if save_path:
-        plt.savefig(save_path, dpi=900)
-    plt.show()
-
-def plot_batch_losses(batch_losses, save_path=None):
-    plt.plot(batch_losses)
-    plt.title('Training Batch Loss Curve')
-    plt.xlabel('Batch')
-    plt.ylabel('Loss')
-    if save_path:
-        plt.savefig(save_path, dpi=900)
-    plt.show()
 
 def flatten_list(nested_list):
     flattened_list = []
@@ -217,37 +254,58 @@ def flatten_list(nested_list):
             flattened_list.append(item)
     return flattened_list
 
+def calculate_accuracy(y_true, y_pred):
+    correct = 0
+    total = 0
+    for true, pred in zip(y_true, y_pred):
+        correct += int(true == pred)
+        total += 1
+    return correct / total
+
+def print_nan_details(tensor, tensor_name):
+    if torch.isnan(tensor).any():
+        print(f'{tensor_name} contains NaN values')
+
 parser = argparse.ArgumentParser(description='Run the CRF classifier.')
 parser.add_argument('train_data_directory', help='The train_data_directory.')
 parser.add_argument('test_data_directory', help='The test_data_directory.')
 parser.add_argument('output_directory', help='The output directory to write to.')
 parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to use.')
+parser.add_argument('--mode', type=str, default="exon",
+                    help='Target to use for prediction, either gene or exon.')
+
 args = parser.parse_args()
 train_directory = args.train_data_directory
 test_directory = args.test_data_directory
 output_directory = args.output_directory
+mode = args.mode
 
 # Create datasets:
-train_dataset = GeneDataset(train_directory)
-test_dataset = GeneDataset(test_directory)
+train_dataset = GeneDataset(train_directory, mode=mode)
+test_dataset = GeneDataset(test_directory, mode=mode)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=64)
-test_dataloader = DataLoader(test_dataset, batch_size=64)
+train_dataloader = DataLoader(train_dataset, batch_size=32)
+test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Train the model and get the losses for each epoch
 model, epoch_losses, batch_losses = train_crf_classifier(train_dataloader, input_dim=129, num_tags=2, num_epochs=args.epochs)
 
 # Save the model after training
-torch.save(model.state_dict(), os.path.join(output_directory, 'crf.pth'))
+torch.save(model.state_dict(), os.path.join(
+    output_directory, f'crf_{timestamp}.pth'))
 
 # Plot the training loss curve
-plot_loss_curve(epoch_losses, save_path=os.path.join(output_directory, 'training_loss_curve.png'))
+plot_loss_curve(epoch_losses, save_path=os.path.join(
+    output_directory, f'training_loss_curve_{timestamp}.png'))
 
 # Plot the training batch loss curve
-plot_batch_losses(batch_losses, save_path=os.path.join(output_directory, 'training_batch_loss_curve.png'))
+plot_batch_losses(batch_losses, save_path=os.path.join(
+    output_directory, f'training_batch_loss_curve_{timestamp}.png'))
 
 #Plot results
 y_true, y_pred = get_model_predictions_and_labels(model, test_dataloader)
 print(f"Classification report: {classification_report(y_true, y_pred)}")
-plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(output_directory, 'confusion_matrix.png'))
+plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(output_directory, f'confusion_matrix_{timestamp}.png'))
+plot_sequence_labels(y_true, y_pred, save_path=os.path.join(
+    output_directory, f'linear_prediction_path_{timestamp}.png'))
