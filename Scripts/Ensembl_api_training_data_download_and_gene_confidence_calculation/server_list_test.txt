@@ -1,0 +1,4 @@
+ailuropoda_melanoleuca_core_110_2       mysql-ens-sta-1 4519
+alouatta_palliata_gca004027835v1_core_109_1     mysql-ens-sta-5 4684
+aotus_nancymaae_core_110_1      mysql-ens-sta-1 4519
+artibeus_jamaicensis_gca014825515v1_core_109_1  mysql-ens-sta-5 4684
