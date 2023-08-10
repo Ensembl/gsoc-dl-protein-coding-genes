@@ -52,9 +52,9 @@ def plot_sequence_labels(true_labels, predicted_labels, save_path=None):
 
     # Plot predicted labels
     ax.plot(tokens, predicted_labels, marker='o',
-               linestyle='-', label='Predicted Label')
+            linestyle='-', label='Predicted Label', color='blue', linewidth=0.5)
     ax.plot(tokens, true_labels, marker='o',
-            linestyle='-', label='True Label', color='red')
+            linestyle='-', label='True Label', color='red', linewidth=1)
 
 
     ax.set_xlabel('Token Index')
