@@ -1,3 +1,4 @@
+import torch.nn as nn
 import os
 import torch
 import random
@@ -23,47 +24,6 @@ from plotting_results import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 current_file = ""
-
-
-def is_repetitive(db, start, end, sequence_len, strand, record):
-    if strand == -1:
-        start, end = sequence_len - end, sequence_len - start
-
-    # account for 1 based indexing in gff
-    start += 1
-    end += 1
-    for feature in db.region(region=(record, start, end)):
-        feature_id = feature.attributes.get('ID', None)
-        if feature_id and 'repeat' in feature_id[0]:
-            return 1
-
-    return 0
-
-
-def is_gene(db, start, end, sequence_len, strand, record):
-    if strand == -1:
-        start, end = sequence_len - end, sequence_len - start
-    alternative_strand = "+" if strand == 1 else "-"
-    # account for 1 based indexing in gff
-    start += 1
-    end += 1
-    for feature in db.region(region=(record, start, end)):
-        if (feature.featuretype == 'gene' or feature.featuretype == 'gene_quality') and (str(feature.strand) == str(strand) or feature.strand == alternative_strand):
-            return 1
-    return 0
-
-
-def is_exon(db, start, end, sequence_len, strand, record):
-    if strand == -1:
-        start, end = sequence_len - end, sequence_len - start
-    alternative_strand = "+" if strand == 1 else "-"
-    # account for 1 based indexing in gff
-    start += 1
-    end += 1
-    for feature in db.region(region=(record, start, end)):
-        if (feature.featuretype == 'exon') and (feature.strand == strand or feature.strand == alternative_strand):
-            return 1
-    return 0
 
 class FileIterator:
     def __init__(self, directory, shuffle=True):
@@ -108,98 +68,105 @@ class GeneDataset(IterableDataset):
         for line, current_file in self.file_iterator:
             try:
                 data_list = json.loads(line)
-                features_list = []
+                features_sequence_list = []
+                features_general_list = []
                 target_list = []
                 mask_list = []  # List to store the mask tensors
                 positions_list = []
                 exons = 0
                 for data in data_list:
                     target = None
-                    features = None
-                    features = {k: v/25 if k not in ('repetitive') else (1-v)*10 for k, v in data.items() if k != 'gene' and k != 'exon' and k != 'position'}
-                    position = int(data.get("position", None))
-                    if len(features) != 128:
-                        print(f"odd number of features in token: {len(features)}")
-                        # mask this value
-                        features_list.append(torch.ones(128, dtype=torch.bool))
-                        target_list.append(torch.tensor([0]))
-                        mask_list.append(torch.ones(0, dtype=torch.bool))
-                        positions_list.append(torch.tensor([position]))
-                        continue
 
+                    # The sequence is one-hot-encoded, so the sequence features have a different dimensionality than the general features
+                    features_general = None
+                    features_sequence = None
+                    features_sequence = torch.tensor(
+                        data["sequence"], dtype=torch.float32)
+                    features_general = {k: v if k not in ('repetitive') else (1-v)*10 for k, v in data.items(
+                    ) if k != 'gene' and k != 'exon' and k != 'position' and k != 'sequence'}
+                    position = int(data.get("position", None))
                     target = int(data.get(self.mode, None))
                     
                     if target == 1:
                         exons +=1
 
-                    if features and target is not None:
-                        features_list.append(torch.tensor(
-                            [f for f in features.values()], dtype=torch.float32))
+                    if features_sequence and features_general and target is not None:
+                        features_general_list.append(features_general)
+                        features_sequence_list.append(features_sequence)
                         target_list.append(torch.tensor([target]))
                         mask_list.append(torch.ones(1, dtype=torch.bool))  # Add a mask of 1 for the sequence
                         positions_list.append(torch.tensor([position]))
-                if features_list and target_list:
-                    features_list = torch.stack(features_list)
-                    target_list = torch.stack(target_list)
-                    mask_list = torch.stack(mask_list) 
-                    positions_list = torch.stack(positions_list)
-                    if features_list.size(0) < self.max_sequence_length:
-                        pad_size = self.max_sequence_length - features_list.size(0)
-                        padded_features = F.pad(features_list, (0, 0, 0, pad_size), 'constant', 0)
-                        padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', -1)
-                        padded_mask = F.pad(mask_list, (0, 0, 0, pad_size), 'constant', False)  # Pad the mask tensor
-                        padded_positions = F.pad(
-                            positions_list, (0, 0, 0, pad_size), 'constant', -1)
-                    else:
-                        padded_features = features_list
-                        padded_target = target_list
-                        padded_mask = mask_list
-                        padded_positions = positions_list
-                    # Return the mask tensor
-                    yield padded_features, padded_target, padded_mask, padded_positions, current_file
+                features_general_list = torch.stack(features_general_list)
+                features_sequence_list = torch.stack(features_sequence_list)
+                target_list = torch.stack(target_list)
+                mask_list = torch.stack(mask_list) 
+                positions_list = torch.stack(positions_list)
+                # Pad if features sequences are less than 4000 tokens long
+                if features_sequence_list.size(0) < self.max_sequence_length:
+                    pad_size = self.max_sequence_length - \
+                        features_sequence_list.size(0)
+                    
+                    padded_features_sequence = F.pad(
+                        features_sequence_list, (0, 0, 0, pad_size), 'constant', 0)
+                    padded_features_general = F.pad(
+                        features_general_list, (0, 0, 0, pad_size), 'constant', 0)
+                    padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', -1)
+                    padded_mask = F.pad(mask_list, (0, 0, 0, pad_size), 'constant', False)  # Pad the mask tensor
+                    padded_positions = F.pad(
+                        positions_list, (0, 0, 0, pad_size), 'constant', -1)
+                else:
+                    padded_features_sequence = features_sequence_list
+                    padded_features_general = features_general_list
+                    padded_target = target_list
+                    padded_mask = mask_list
+                    padded_positions = positions_list
+                # Return the mask tensor
+                yield padded_features_sequence, padded_features_general, padded_target, padded_mask, padded_positions, current_file
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
 
 
 class LSTMClassifier(nn.Module):
-    def __init__(self, input_dim, num_tags, hidden_dim=128, num_layers=2, dropout_prob=0.1):
+    def __init__(self, seq_input_dim, normal_input_dim, hidden_dim=128, num_layers=2, dropout_prob=0.1):
         super(LSTMClassifier, self).__init__()
 
-        # Define a multi-layer, bidirectional LSTM
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=num_layers,
+        # For the sequence data
+        self.lstm = nn.LSTM(seq_input_dim, hidden_dim, num_layers=num_layers,
                             bidirectional=True, batch_first=True, dropout=dropout_prob if num_layers > 1 else 0)
 
-        # Define a fully connected layer to map the LSTM output to an intermediate space
-        self.fc1 = nn.Linear(hidden_dim * 2, hidden_dim)
+        # Intermediate fully connected layer
+        # The input will be the concatenated outputs of LSTM and normal features
+        self.fc1 = nn.Linear(hidden_dim * 2 + normal_input_dim, hidden_dim)
 
-        # Add a Dropout layer after the intermediate fully connected layer
+        # Dropout layer
         self.dropout_fc1 = nn.Dropout(p=dropout_prob)
 
-        # Define the final fully connected layer that maps to the desired number of tags
+        # Final fully connected layer
         self.fc2 = nn.Linear(hidden_dim, 1)
 
-        # Apply the initialization here
+        # Apply the initialization
         init.kaiming_normal_(self.fc1.weight, nonlinearity='relu')
         init.kaiming_normal_(self.fc2.weight, nonlinearity='relu')
 
-    def forward(self, x):
-        # Apply the LSTM to the input
-        x, _ = self.lstm(x)
+    def forward(self, seq_data, normal_data):
+        # Process sequence data through LSTM
+        lstm_out, _ = self.lstm(seq_data)
 
-        # Apply the fully connected layer to the LSTM output
-        x = self.fc1(x)
+        # Optionally, get the last timestep's output for each sequence
+        lstm_out = lstm_out[:, -1, :]
 
-        # Apply dropout to the output of the first fully connected layer
+        # Concatenate LSTM output and normal features
+        combined_data = torch.cat((lstm_out, normal_data), dim=1)
+
+        # Pass combined data through fully connected layers
+        x = self.fc1(combined_data)
         x = self.dropout_fc1(x)
-
-        # Apply the final fully connected layer
         x = self.fc2(x)
 
-        # Apply a sigmoid activation to get the probability
+        # Apply sigmoid activation to get the probability
         x = torch.sigmoid(x)
 
         return x
-
 
 def f_beta_loss(y_pred, y_true, beta=1):
     # Calculating Precision and Recall
@@ -219,7 +186,7 @@ def f_beta_loss(y_pred, y_true, beta=1):
     return 1 - f_beta.mean(), precision, recall
 
 def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
-    model = LSTMClassifier(input_dim, num_tags).to(device)
+    model = LSTMClassifier(seq_input_dim=15, normal_input_dim=3).to(device)
     learning_rate = 0.001
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     # Define the scheduler
@@ -235,29 +202,16 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     for epoch in range(num_epochs):
         total_loss = 0
         skipped_batches = 0
-        for i, (inputs, tags, mask, _, _) in enumerate(train_dataloader):
-            
-            inputs, tags, mask = filter_inputs_with_threshold_targets(
-                inputs, tags.squeeze(-1), mask.squeeze(-1))
+        for i, (seq_data, normal_data, tags, mask, _, _) in enumerate(train_dataloader):
+            seq_data, normal_data, tags, mask = filter_inputs_with_threshold_targets(
+                seq_data, normal_data, tags.squeeze(-1), mask.squeeze(-1))
             if torch.sum(tags == 1).item() == 0:
                 skipped_batches += 1
                 continue
-            # In first epoch, plot PCAs for all batches
-            if epoch == 0:
-                inputs_numpy = inputs.cpu().numpy()  # Convert the inputs tensor to a NumPy array
-                tags_numpy = tags.cpu().numpy()     # Convert the tags tensor to a NumPy array
-
-                # Reshape the arrays, keeping the last dimension and merging all others
-                inputs_reshaped = np.reshape(inputs_numpy, (-1, inputs_numpy.shape[-1]))
-                tags_flatten = tags_numpy.flatten()
-
-                transform_and_plot(inputs_reshaped, tags_flatten, i)
-
-            inputs, tags = inputs.to(device), tags.to(device)
+            seq_data, normal_data, tags = seq_data.to(device), normal_data.to(device), tags.to(device)
             mask = mask.to(device)
-
             optimizer.zero_grad()
-            outputs = model(inputs)
+            outputs = model(seq_data, normal_data)
             loss, precision, recall = f_beta_loss(
                 outputs[mask], tags[mask], beta=beta_value)
             loss.backward()
@@ -265,7 +219,6 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
             writer.add_scalar('loss', loss, i)
             writer.add_scalar('precision', precision, i)
             writer.add_scalar('recall', recall, i)
-
             optimizer.step()
             total_loss += loss.item()
             batch_losses.append(loss.item())
@@ -280,16 +233,17 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     return model, epoch_losses, batch_losses  # return losses along with the model
 
 
-def filter_inputs_with_threshold_targets(inputs, targets, mask, threshold=150):
+def filter_inputs_with_threshold_targets(seq_data, normal_data, targets, mask, threshold=150):
     # Count the number of occurrences of '1' in each row of the targets
     rows_with_more_than_threshold_ones = (targets == 1).sum(dim=1) > threshold
 
     # Use boolean indexing to keep only the rows that have more than the given threshold occurrences of 1
-    filtered_inputs = inputs[rows_with_more_than_threshold_ones]
+    filtered_seq_data = seq_data[rows_with_more_than_threshold_ones]
+    filtered_normal_data = normal_data[rows_with_more_than_threshold_ones]
     filtered_targets = targets[rows_with_more_than_threshold_ones]
     filtered_mask = mask[rows_with_more_than_threshold_ones]
 
-    return filtered_inputs, filtered_targets, filtered_mask
+    return filtered_seq_data, filtered_normal_data, filtered_targets, filtered_mask
 
 
 def transform_and_plot(features, targets, batch_count):
