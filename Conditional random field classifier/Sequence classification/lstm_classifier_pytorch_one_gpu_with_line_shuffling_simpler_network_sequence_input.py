@@ -82,15 +82,15 @@ class GeneDataset(IterableDataset):
                     features_sequence = None
                     features_sequence = torch.tensor(
                         data["sequence"], dtype=torch.float32)
-                    features_general = {k: v if k not in ('repetitive') else (1-v)*10 for k, v in data.items(
-                    ) if k != 'gene' and k != 'exon' and k != 'position' and k != 'sequence'}
+                    features_general = torch.tensor([v if k not in ('repetitive') else (1-v)*10 for k, v in data.items(
+                    ) if k != 'gene' and k != 'exon' and k != 'position' and k != 'sequence'], dtype=torch.float32)
                     position = int(data.get("position", None))
                     target = int(data.get(self.mode, None))
                     
                     if target == 1:
                         exons +=1
 
-                    if features_sequence and features_general and target is not None:
+                    if features_sequence is not None and features_general is not None and target is not None:
                         features_general_list.append(features_general)
                         features_sequence_list.append(features_sequence)
                         target_list.append(torch.tensor([target]))
@@ -209,6 +209,7 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
                 skipped_batches += 1
                 continue
             seq_data, normal_data, tags = seq_data.to(device), normal_data.to(device), tags.to(device)
+            seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
             mask = mask.to(device)
             optimizer.zero_grad()
             outputs = model(seq_data, normal_data)
@@ -323,7 +324,7 @@ train_dataset = GeneDataset(train_directory, mode=mode, shuffle=True)
 test_dataset = GeneDataset(test_directory, mode=mode, shuffle=True)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=512)
+train_dataloader = DataLoader(train_dataset, batch_size=1)
 test_dataloader = DataLoader(test_dataset, batch_size=1)
 
 # Train the model and get the losses for each epoch
