@@ -227,6 +227,8 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
             print(loss.item())
             print(f'Exons: {torch.sum(tags == 1).item()}')
             exons_per_batch.append(torch.sum(tags == 1).item())
+        if i+1 - skipped_batches == 0:
+            continue
         avg_loss = total_loss / (i+1 - skipped_batches)
         print(f"Epoch {epoch+1}: Loss = {avg_loss}")
         epoch_losses.append(avg_loss)
@@ -279,6 +281,7 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
             seq_data, normal_data, labels = seq_data.to(
                 device).half(), normal_data.to(
                 device).half(), labels.to(device).half()
+            seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
             mask = mask.squeeze(-1).to(device).flatten().half()
             outputs = model(seq_data, normal_data).flatten()
             labels =labels.flatten()
@@ -327,7 +330,7 @@ train_dataset = GeneDataset(train_directory, mode=mode, shuffle=True)
 test_dataset = GeneDataset(test_directory, mode=mode, shuffle=True)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=1)
+train_dataloader = DataLoader(train_dataset, batch_size=512)
 test_dataloader = DataLoader(test_dataset, batch_size=1)
 
 # Train the model and get the losses for each epoch
