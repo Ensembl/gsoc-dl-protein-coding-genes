@@ -58,7 +58,7 @@ class FileIterator:
         return iter(self.file_generator())
 
 class GeneDataset(IterableDataset):
-    def __init__(self, directory, max_sequence_length=4000, mode='gene', shuffle=True):
+    def __init__(self, directory, max_sequence_length=4005, mode='gene', shuffle=True):
         self.shuffle = shuffle
         self.file_iterator = FileIterator(directory, shuffle= self.shuffle)
         self.max_sequence_length = max_sequence_length
@@ -98,6 +98,7 @@ class GeneDataset(IterableDataset):
                         positions_list.append(torch.tensor([position]))
                 features_general_list = torch.stack(features_general_list)
                 features_sequence_list = torch.stack(features_sequence_list)
+                
                 target_list = torch.stack(target_list)
                 mask_list = torch.stack(mask_list) 
                 positions_list = torch.stack(positions_list)
@@ -107,7 +108,7 @@ class GeneDataset(IterableDataset):
                         features_sequence_list.size(0)
                     
                     padded_features_sequence = F.pad(
-                        features_sequence_list, (0, 0, 0, pad_size), 'constant', 0)
+                        features_sequence_list, (0, 0, 0, 0, 0, pad_size), 'constant', 0)
                     padded_features_general = F.pad(
                         features_general_list, (0, 0, 0, pad_size), 'constant', 0)
                     padded_target = F.pad(target_list, (0, 0, 0, pad_size), 'constant', -1)
@@ -274,10 +275,12 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
     rows = []
     torch.cuda.empty_cache()
     with torch.no_grad():
-        for inputs, labels, mask, positions, sequence_names in dataloader:
-            inputs, labels = inputs.to(device).half(), labels.to(device).half()
+        for seq_data, normal_data, labels, mask, positions, sequence_names in dataloader:
+            seq_data, normal_data, labels = seq_data.to(
+                device).half(), normal_data.to(
+                device).half(), labels.to(device).half()
             mask = mask.squeeze(-1).to(device).flatten().half()
-            outputs = model(inputs).flatten()
+            outputs = model(seq_data, normal_data).flatten()
             labels =labels.flatten()
             predicted_labels = (outputs > threshold).float()
             y_true.extend(labels[mask].tolist())
