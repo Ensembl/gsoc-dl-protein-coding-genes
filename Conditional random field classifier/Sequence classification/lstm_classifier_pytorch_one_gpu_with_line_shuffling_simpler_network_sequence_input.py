@@ -20,8 +20,10 @@ from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from plotting_results import *
 
+
 # Make sure the device is set to cuda:"0" (first GPU)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 current_file = ""
 
@@ -58,7 +60,7 @@ class FileIterator:
         return iter(self.file_generator())
 
 class GeneDataset(IterableDataset):
-    def __init__(self, directory, max_sequence_length=4005, mode='gene', shuffle=True):
+    def __init__(self, directory, max_sequence_length=4000, mode='gene', shuffle=True):
         self.shuffle = shuffle
         self.file_iterator = FileIterator(directory, shuffle= self.shuffle)
         self.max_sequence_length = max_sequence_length
@@ -208,15 +210,25 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
                 seq_data, normal_data, tags.squeeze(-1), mask.squeeze(-1))
             if torch.sum(tags == 1).item() == 0:
                 skipped_batches += 1
+                print("continued")
                 continue
-            seq_data, normal_data, tags = seq_data.to(device), normal_data.to(device), tags.to(device)
             seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
+            normal_data = normal_data.view(-1, normal_data.size(2))
+            tags = tags.view(-1, 1)
+            mask = mask.view(-1, 1)
+            seq_data, normal_data, tags = seq_data.to(device), normal_data.to(device), tags.to(device)
             mask = mask.to(device)
+            print(f"Memory before forwardpass {torch.cuda.memory_stats()}")
+
             optimizer.zero_grad()
             outputs = model(seq_data, normal_data)
+            print(f"Outputs:{outputs.shape}, tags: {tags.shape}, maks: {mask.shape}")
+            print(f"Memory after forwardpass {torch.cuda.memory_stats()}")
             loss, precision, recall = f_beta_loss(
                 outputs[mask], tags[mask], beta=beta_value)
             loss.backward()
+            print(f"Memory after backwardpass {torch.cuda.memory_stats()}")
+
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)
             writer.add_scalar('loss', loss, i)
             writer.add_scalar('precision', precision, i)
@@ -237,7 +249,7 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     return model, epoch_losses, batch_losses  # return losses along with the model
 
 
-def filter_inputs_with_threshold_targets(seq_data, normal_data, targets, mask, threshold=150):
+def filter_inputs_with_threshold_targets(seq_data, normal_data, targets, mask, threshold=10):
     # Count the number of occurrences of '1' in each row of the targets
     rows_with_more_than_threshold_ones = (targets == 1).sum(dim=1) > threshold
 
@@ -282,6 +294,10 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
                 device).half(), normal_data.to(
                 device).half(), labels.to(device).half()
             seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
+            normal_data = normal_data.view(-1, normal_data.size(2))
+            labels = labels.view(-1, 1)
+            mask = mask.view(-1, 1)
+
             mask = mask.squeeze(-1).to(device).flatten().half()
             outputs = model(seq_data, normal_data).flatten()
             labels =labels.flatten()
