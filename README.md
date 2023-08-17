@@ -58,6 +58,9 @@ Contained within the `Ensembl_api_training_data_download_and_gene_confidence_cal
 For processing multiple genomes on the EMBL EBI HPC platform, a script in the `run scripts` directory is provided to facilitate batch processing.
 
 ![Gene scoring](Images_readme/Gene_scoring.png)
+***Figure 1**: Gene Annotation Quality Evaluation*
+
+*Annotations are analyzed by `high_confidence_genes_gsoc23_full_gff_with_repeats_with_strand.pl` based on parameters like intron size, canonical splicing, and alignment with recognized proteins.*
 
 ### Cleaning up Genomes
 
@@ -87,7 +90,8 @@ The `Training_data_cleaning` directory is pivotal for this process:
 Furthermore, the `Nextflow_data_preprocession` directory contains a Nextflow pipeline that merges data acquisition and the above cleaning steps. This integrated solution prepares high-quality training data, although stability might vary.
 
 ![Data cleaning](Images_readme/Data_cleaning.png)
-
+***Figure 2**: Gene Annotation Quality Evaluation*
+*This figure illustrates two strategies for refining gene annotations and associated sequences. The first strategy, **GFF-Only Filtering**, focuses on improving `.gff` annotations while preserving sequence integrity. It hypothesizes that low-quality genes might be pseudogenes without protein-coding capacity. Such genes are treated as "intergenic regions" during classifier training. The second strategy, **GFF Filtering & Sequence Excision**, takes a more comprehensive approach by addressing both `.gff` annotations and linked sequences. It excludes elements of lower confidence due to limited information about low-quality genes, which are consequently omitted from training data. The process of gene annotation refinement involves the removal of low-quality and overlapping genes.* 
 
 ### Feature Extraction and Sequence Fragmentation
 
@@ -146,11 +150,18 @@ Contained within the `Sequence classification` directory, this segment of the pr
       - A sigmoid activation function is applied post FC2, translating outputs to probabilities, making it apt for binary classification tasks.
 
 ![BiLSTM architecture](Images_readme/BiLSTM.png)
+***Figure 3**: BiLSTM architecture*
+
+*The network comprises of multiple layers: **LSTM Layer**: Comprising multiple bidirectional LSTM layers, this component efficiently handles sequences of varying lengths, facilitating bidirectional information flow for enhanced context understanding. **Intermediate Fully Connected Layer (FC1)**: This layer transforms LSTM outputs, mapping them to an intermediate space that prepares them for the final classification step. **Dropout Layer**: Placed after FC1, the dropout layer introduces randomness by setting a fraction of input units to 0 during each training update. This mechanism helps prevent overfitting by promoting robust learning. **Final Fully Connected Layer (FC2)**: The last layer of the architecture, FC2, transforms the processed LSTM outputs into a one-dimensional space, effectively priming them for binary classification tasks.*
     
   - **Loss Function - F-beta Score**:
     - The F-beta score, a measure of a model's accuracy, weighs recall and precision of the "gene" class. This makes it better suitable for unbalanced datasets. A beta of 1 considers both recall and precision equally, but when adjusted, it can emphasize the importance of one over the other.
 
-![F-beta score](Images_readme/F_beta_score.png)
+![F-beta score](Images_readme/F_beta_loss.png)
+
+***Figure 4**: F-beta loss*
+
+*Controlled by the parameter beta, the F-beta loss adapts precision-recall balance. Beta influences the weight assigned to recall in relation to precision. A higher beta places more emphasis on recall, capturing more positives even if accompanied by increased false positives. Conversely, a lower beta prioritizes precision, reducing false positives but potentially missing positives. The F-beta loss formula incorporates true positives (TP), false positives (FP), and false negatives (FN). This integration enables models to optimize the trade-off between false positives and false negatives, enhancing performance on imbalanced datasets.*
 
 - **Shallow Learning Approaches**:
   - **Files**: `shallow-learning`
