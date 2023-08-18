@@ -7,7 +7,7 @@
 ### Mentors : [Leanne Haggerty](https://www.ebi.ac.uk/people/person/leanne-haggerty/), [Fergal Martin](https://www.ebi.ac.uk/people/person/fergal-martin/) <br/><br/>
 
 ## Brief Description
-Accurate gene annotation in eukaryotic genomes using only genomic data remains a pivotal challenge, especially with the influx of data from next-generation sequencing. Traditional methodologies either lean on homology-based searches, posing inaccuracies when working with unique genomes, or incorporate additional experimental datasets like transcriptomics, which can be resource-intensive. To address these limitations, our study harnesses deep learning techniques to enhance the precision of gene identification based solely on DNA sequence characteristics. We curated a high-confidence training dataset derived from mammalian genomes. These genomes underwent a rigorous process of identifying top-tier genes, which were then meticulously filtered to ensure quality and relevance for our model training. Utilizing this curated dataset, various deep learning network architectures will be implemented, tested, and optimized to try to push the boundaries of gene detection accuracy from inherent DNA sequence features.
+Accurate gene annotation in eukaryotic genomes using only genomic data remains a pivotal challenge, especially with the influx of data from next-generation sequencing. Traditional methodologies either lean on homology-based searches, posing inaccuracies when working with unique genomes, or incorporate additional experimental datasets like transcriptomics, which can be resource-intensive. To address these limitations, this Google Summer of Code project harnesses deep learning techniques to enhance the precision of gene identification based solely on DNA sequence characteristics. It involves a high-confidence training dataset derived from mammalian genomes. These genomes underwent a rigorous process of identifying top-tier genes, which were then meticulously filtered to ensure quality and relevance for model training. Utilizing this curated dataset, various deep learning network architectures were be implemented, tested, and optimized to try to push the boundaries of gene detection accuracy from inherent DNA sequence features.
 
 
 ## Requirements for Running the Code
@@ -28,15 +28,86 @@ Accurate gene annotation in eukaryotic genomes using only genomic data remains a
   - **System RAM**: 
     - Tested on a machine with **64 GB RAM**.
     - A minimum of **32 GB RAM** should be sufficient, though **64 GB** is optimal.
+  - **System hard drive**
+    - To save all genomes of the mammal database and process them, aroung **500 GB** of memory are needed.
 
 > 🔴 **Note**: Running on systems with specifications lower than recommended might result in performance issues or potential failures.
 
+### Installing Perl dependencies (only needed to use Ensemble API to fetch genomes and evaluate gene quality)
 
+Perl is a versatile and widely used programming language, and Ensembl offers a rich set of APIs written in Perl for bioinformatics applications. Here's a guide on how to install Perl and the necessary Ensembl dependencies:
 
-To set up the required Python environment, start by installing Python 3.8. You can download it from the official [Python website](https://www.python.org/downloads/release/python-380/). Once Python 3.8 is installed, proceed to install `conda`, a powerful package manager. The easiest way to do this is by installing [Miniconda](https://docs.conda.io/en/latest/miniconda.html) which is a lightweight version of Anaconda, tailored specifically for conda. Choose the appropriate version for your OS and follow the installation instructions. After `conda` is set up, you can create a new environment and install packages from the `requirements.txt` file using the following commands:
+### 1. Install Perl
+
+Most Linux distributions come with Perl pre-installed. However, to ensure you have the latest version:
 
 ```bash
+sudo apt-get update
+sudo apt-get install perl
+```
+### 1. Install Ensemble API
+Follow those instrcutions to install the Ensemble Perl API:
+http://www.ensembl.org/info/docs/api/api_installation.html 
+
+### Installing DIAMOND Aligner (only needed to use Ensemble API to fetch genomes and evaluate gene quality)
+
+**DIAMOND** is a high-performance sequence aligner for protein and translated DNA searches, designed to serve as a drop-in replacement for the BLAST suite of tools. Here's a straightforward method to install it on Linux:
+
+1. **Download and Extract the Precompiled Binary**:
+
+1. Use `wget` to download the DIAMOND binary for Linux and extract:
+```bash
+wget http://github.com/bbuchfink/diamond/releases/download/v2.1.8/diamond-linux64.tar.gz
+tar xzf diamond-linux64.tar.gz
+```
+2. (Optional) Move the diamond binary to a directory in your $PATH for easier access:
+```bash
+sudo mv diamond /usr/local/bin/
+```
+
+3. Test the installation
+```bash
+diamond --help
+```
+
+### Installing Python and Conda
+
+To set up the required Python environment, start by installing Python 3.8. You can download it from the official [Python website](https://www.python.org/downloads/release/python-380/). Once Python 3.8 is installed, proceed to install `conda`, a powerful package manager. The easiest way to do this is by installing [Miniconda](https://docs.conda.io/en/latest/miniconda.html) which is a lightweight version of Anaconda, tailored specifically for conda. Choose the appropriate version for your OS and follow the installation instructions. 
+
+### Installing CUDA and PyTorch Based on GPU and NVIDIA Drivers
+
+To optimize deep learning tasks on GPUs, NVIDIA provides CUDA, a parallel computing platform. However, the CUDA version you install should be compatible with your NVIDIA driver and the PyTorch version you aim to use.
+
+1. **Identifying GPU and NVIDIA Driver**: 
+   - First, check the GPU model with:
+     ```
+     lspci | grep -i nvidia
+     ```
+   - Check your NVIDIA driver version with:
+     ```
+     nvidia-smi
+     ```
+
+2. **Installing CUDA**:
+   - Visit NVIDIA's official [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive) to find a suitable CUDA version that's compatible with your driver.
+   - Download and install the selected CUDA version, following NVIDIA's instructions.
+
+3. **Installing PyTorch**:
+   - PyTorch's installation command varies based on the CUDA version. Visit the official [PyTorch website](https://pytorch.org/get-started/locally/) and select the appropriate CUDA version from the dropdown to get the installation command.
+   - Create and activate a conda enviroment:
+```bash
 conda create --name dl_protein_coding_genes python=3.8
+conda activate dl_protein_coding_genes
+```
+   - Use the provided `conda` command to install PyTorch.
+
+> **Note**: Always ensure compatibility between NVIDIA driver, CUDA, and PyTorch versions to avoid issues. You can also consider using Docker with NVIDIA's provided containers to manage these dependencies effortlessly.
+
+### Installing remaining packages
+
+After `torch` is set up, you can create a new environment and install packages from the `requirements.txt` file using the following commands:
+
+```bash
 conda activate dl_protein_coding_genes
 conda install --file requirements.txt
 ```
@@ -101,12 +172,12 @@ Furthermore, the `Nextflow_data_preprocession` directory contains a Nextflow pip
 
 - **Second Approach - One-hot Encoding of DNA Sequences**: This strategy, bypassing the k-mer content assessment, directly converts the 250 bp segment into a one-hot encoded 2D matrix. This encoding encompasses all potential DNA bases, ensuring a thorough representation of sequence data. 
 
-The `Scripts/Scripts_to_start_jobs/run_data_preprocession_and_test_train_split.py` script is available for a directory that includes corresponding gff and fasta files. It facilitates data division into test and training datasets followed by featurization.
+The `Scripts_for_training_data_assembly/Scripts_to_start_jobs/run_data_preprocession_and_test_train_split.py` script is available for a directory that includes corresponding gff and fasta files. It facilitates data division into test and training datasets followed by featurization.
 
 ### Deep learning architectures used to distinguish gene- from non-gene-sniplets
 ### Sequence Classification
 
-Contained within the `Sequence classification` directory, this segment of the project primarily deals with deploying neural networks to predict the exon status of 250 bp sequences.
+Contained within the `Sequence_classification` directory, this segment of the project primarily deals with deploying neural networks to predict the exon status of 250 bp sequences.
 
 - **Conditional Random Fields (CRF)**:
   Conditional Random Fields (CRFs) are a class of statistical modeling methods often employed for structured prediction. Within the domain of sequence labeling, such as in natural language processing tasks like named entity recognition and part-of-speech tagging, CRFs have been pivotal. Their strength lies in their capacity to consider both local and global contextual information, allowing them to discern intricate patterns and dependencies in sequential data.
@@ -208,7 +279,6 @@ The overall process seeks to detect and concatenate tokens indicative of exon st
 
 - **Consolidation and Output**: The identified exon-rich regions, from both strands, are systematically catalogued. Attributes include the specific sequence, its position (start and end points), and whether it's from the forward or reverse strand. This consolidated data can then be saved for further analysis or representation.
 
-The approach offers a holistic and systematic method to uncover and understand exon-rich regions in genomic sequences, paving the way for deeper genetic analyses.
 
 #### Results
   - general metrics
