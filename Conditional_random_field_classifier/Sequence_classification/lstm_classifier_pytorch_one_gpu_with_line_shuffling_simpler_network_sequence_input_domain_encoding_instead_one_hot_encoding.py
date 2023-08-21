@@ -20,6 +20,7 @@ from torch.optim.lr_scheduler import StepLR
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from plotting_results import *
+import torch.autograd.profiler as profiler
 
 
 # Make sure the device is set to cuda:"0" (first GPU)
@@ -157,7 +158,7 @@ class GeneDataset(IterableDataset):
 
 
 class LSTMClassifier(nn.Module):
-    def __init__(self, seq_input_dim, normal_input_dim, hidden_dim=128, num_layers=2, dropout_prob=0.1):
+    def __init__(self, seq_input_dim, normal_input_dim, hidden_dim=64, num_layers=2, dropout_prob=0.1):
         super(LSTMClassifier, self).__init__()
 
         # For the sequence data
@@ -166,7 +167,7 @@ class LSTMClassifier(nn.Module):
 
         # Intermediate fully connected layer
         # The input will be the concatenated outputs of LSTM and normal features
-        self.fc1 = nn.Linear(hidden_dim + normal_input_dim, hidden_dim)
+        self.fc1 = nn.Linear(hidden_dim*2 + normal_input_dim, hidden_dim)
 
         # Dropout layer
         self.dropout_fc1 = nn.Dropout(p=dropout_prob)
@@ -184,6 +185,9 @@ class LSTMClassifier(nn.Module):
 
         # Optionally, get the last timestep's output for each sequence
         lstm_out = lstm_out[:, -1, :]
+        print(seq_data.shape)
+        print(normal_data.shape)
+        print(lstm_out.shape)
 
         # Concatenate LSTM output and normal features
         combined_data = torch.cat((lstm_out, normal_data), dim=1)
@@ -339,23 +343,28 @@ def transform_and_plot(features, targets, batch_count):
             print("Features at the time of error: ", features)
 
 def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
-    model.eval().half()
+    model.eval()
     y_true = []
     y_pred = []
     rows = []
     torch.cuda.empty_cache()
     with torch.no_grad():
         for seq_data, normal_data, labels, mask, positions, sequence_names in dataloader:
+            print("Still living")
             seq_data, normal_data, labels = seq_data.to(
-                device).half(), normal_data.to(
-                device).half(), labels.to(device).half()
+                device), normal_data.to(device), labels.to(device)
             seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
             normal_data = normal_data.view(-1, normal_data.size(2))
             labels = labels.view(-1, 1)
             mask = mask.view(-1, 1)
-
-            mask = mask.squeeze(-1).to(device).flatten().half()
-            outputs = model(seq_data, normal_data).flatten()
+            
+            mask = mask.squeeze(-1).to(device).flatten()
+            print(f"Size of seq_data: {tensor_size_in_MB(seq_data):.2f} MB")
+            print(f"Size of normal_data: {tensor_size_in_MB(normal_data):.2f} MB")
+            with profiler.profile(use_cuda=True) as prof:
+                with profiler.record_function("model_inference"):
+                    outputs = model(seq_data, normal_data).flatten()
+            print(prof.key_averages().table(sort_by="cuda_time_total"))
             labels =labels.flatten()
             predicted_labels = (outputs > threshold).float()
             y_true.extend(labels[mask].tolist())
@@ -365,10 +374,15 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
             valid_predicted_scores = outputs[mask].tolist()
             for seq_name, pos, score in zip(valid_sequence_names, valid_positions, valid_predicted_scores):
                 rows.append((seq_name, pos, score))
+            torch.cuda.empty_cache()
+
     df = pd.DataFrame(
             rows, columns=['filename', 'position', 'predicted_score'])
 
     return y_true, y_pred, outputs, df
+
+def tensor_size_in_MB(tensor):
+    return tensor.element_size() * tensor.nelement() / (1024 * 1024)
 
 parser = argparse.ArgumentParser(description='Run the lstm classifier.')
 parser.add_argument('train_data_directory', help='The train_data_directory.')
@@ -402,7 +416,7 @@ train_dataset = GeneDataset(train_directory, mode=mode, shuffle=True)
 test_dataset = GeneDataset(test_directory, mode=mode, shuffle=True)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=1)
+train_dataloader = DataLoader(train_dataset, batch_size=10)
 test_dataloader = DataLoader(test_dataset, batch_size=1)
 
 # Train the model and get the losses for each epoch
