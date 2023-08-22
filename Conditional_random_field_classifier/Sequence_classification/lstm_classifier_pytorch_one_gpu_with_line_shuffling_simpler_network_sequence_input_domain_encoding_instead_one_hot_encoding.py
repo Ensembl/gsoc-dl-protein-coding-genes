@@ -251,10 +251,9 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
             mask = mask.view(-1, 1)
             seq_data, normal_data, tags = seq_data.to(device), normal_data.to(device), tags.to(device)
             mask = mask.to(device)
-            print(
-                f"Size of seq_data: {sys.getsizeof(seq_data) / (2**20):.2f} MB")
-            print(
-                f"Size of normal_data: {sys.getsizeof(normal_data) / (2**20):.2f} MB")
+            print(f"Size of seq_data: {tensor_size_in_MB(seq_data):.2f} MB")
+            print(f"Size of normal_data: {tensor_size_in_MB(normal_data):.2f} MB")
+
             torch.cuda.empty_cache()
             optimizer.zero_grad()
             outputs = model(seq_data, normal_data)
@@ -292,9 +291,9 @@ def train_lstm_classifier(train_dataloader, input_dim, num_tags, num_epochs):
     return model, epoch_losses, batch_losses  # return losses along with the model
 
 
-def filter_inputs_with_threshold_targets(seq_data, normal_data, targets, mask, threshold=10):
+def filter_inputs_with_threshold_targets(seq_data, normal_data, targets, mask, threshold=150):
     # Count the number of occurrences of '1' in each row of the targets
-    rows_with_more_than_threshold_ones = (targets == 1).sum(dim=1) > threshold
+    rows_with_more_than_threshold_ones = (targets == 1).sum(dim=1) >= threshold
 
     # Use boolean indexing to keep only the rows that have more than the given threshold occurrences of 1
     filtered_seq_data = seq_data[rows_with_more_than_threshold_ones]
@@ -349,10 +348,11 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
     rows = []
     torch.cuda.empty_cache()
     with torch.no_grad():
-        for seq_data, normal_data, labels, mask, positions, sequence_names in dataloader:
+        for seq_data, normal_data, labels, mask, positions, sequence_name in dataloader:
             print("Still living")
-            seq_data, normal_data, labels = seq_data.to(
-                device), normal_data.to(device), labels.to(device)
+            seq_data, normal_data, labels, positions = seq_data.to(
+                device), normal_data.to(device), labels.to(device), positions.to(device)
+            positions = positions.squeeze()
             seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
             normal_data = normal_data.view(-1, normal_data.size(2))
             labels = labels.view(-1, 1)
@@ -370,10 +370,9 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
             y_true.extend(labels[mask].tolist())
             y_pred.extend(predicted_labels[mask].tolist())
             valid_positions = positions[mask].tolist()
-            valid_sequence_names = sequence_names[mask].tolist()
             valid_predicted_scores = outputs[mask].tolist()
-            for seq_name, pos, score in zip(valid_sequence_names, valid_positions, valid_predicted_scores):
-                rows.append((seq_name, pos, score))
+            for  pos, score in zip( valid_positions, valid_predicted_scores):
+                rows.append((sequence_name, pos, score))
             torch.cuda.empty_cache()
 
     df = pd.DataFrame(
@@ -416,7 +415,7 @@ train_dataset = GeneDataset(train_directory, mode=mode, shuffle=True)
 test_dataset = GeneDataset(test_directory, mode=mode, shuffle=True)
 
 # Dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=10)
+train_dataloader = DataLoader(train_dataset, batch_size=50)
 test_dataloader = DataLoader(test_dataset, batch_size=1)
 
 # Train the model and get the losses for each epoch
@@ -436,10 +435,10 @@ plot_batch_losses(batch_losses, save_path=os.path.join(
     output_directory, f'training_batch_loss_curve_{timestamp}.png'))
 
 #Plot results
-y_true, y_pred, y_probabilities, df = get_model_predictions_and_labels(model, train_dataloader)
+y_true, y_pred, y_probabilities, df = get_model_predictions_and_labels(model, test_dataloader)
 print(f"Classification report: {classification_report(y_true, y_pred)}")
 # Save the DataFrame to a CSV file
-df.to_csv(save_path=os.path.join(
+df.to_csv(os.path.join(
     output_directory, f'predictions_{timestamp}.csv'), index=False)
 
 plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(output_directory, f'confusion_matrix_{timestamp}.png'))
