@@ -196,8 +196,6 @@ Contained within the `Sequence_classification` directory, this segment of the pr
         - **Feature Extraction**:
           - **LSTM Layer**: An LSTM layer is employed for processing sequences, capturing both forward and backward dependencies due to its bidirectional nature.
           - **Linear Layer**: This layer transforms the outputs of the LSTM layer, doubling the dimension because of the bidirectionality, and maps them to a space that corresponds to the number of tags.
-          - The feature extraction is neatly encapsulated within a sequential container (`nn.Sequential`), streamlining the process of deriving features from raw input sequences.
-
         - **CRF Layer**:
           - The CRF layer works on top of the extracted features and decides on the most probable sequence of tags, taking into account both the LSTM's predictions and the transition probabilities between different tags. This ensures that the predicted sequence tags have a global coherence and are not just based on local decisions.
 
