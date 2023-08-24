@@ -257,12 +257,6 @@ With the change in input strategy, there's an imperative need to reconfigure the
 - Larger input layers to accommodate the expanded sequence data.
 - More complex convolutional or recurrent layers to capture sequence dependencies.
 
-
-## Results
-  - general metrics
-  - confusion matrix
-  - plot for first genome
-
 ### Exon-rich Region Concatenation and Analysis
 
 The overall process seeks to detect and concatenate tokens indicative of exon status, generating more expansive, exon-rich regions in genomic sequences. The main steps of this process are:
@@ -276,12 +270,6 @@ The overall process seeks to detect and concatenate tokens indicative of exon st
 - **Boundary Padding**: After target regions (with high exon content) are identified, an additional sequence (padding) is added around these regions. This ensures that potential exon boundaries close to the identified regions are not missed.
 
 - **Consolidation and Output**: The identified exon-rich regions, from both strands, are systematically catalogued. Attributes include the specific sequence, its position (start and end points), and whether it's from the forward or reverse strand. This consolidated data can then be saved for further analysis or representation.
-
-
-#### Results
-  - general metrics
-  - confusion matrix
-  - plot for first genome
 
 # Challenges
 
