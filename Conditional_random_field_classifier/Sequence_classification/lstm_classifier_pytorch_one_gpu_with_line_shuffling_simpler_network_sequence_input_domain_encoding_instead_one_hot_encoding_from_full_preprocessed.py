@@ -259,7 +259,7 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
 
     df = pd.DataFrame(
             rows, columns=['filename', 'position', 'predicted_score'])
-
+    print(type(y_pred), type(y_true))
     return y_true, y_pred, outputs, df
 
 def tensor_size_in_MB(tensor):
@@ -324,5 +324,5 @@ df.to_csv(os.path.join(
     output_directory, f'predictions_{timestamp}.csv'), index=False)
 
 plot_confusion_matrix(y_true, y_pred, save_path=os.path.join(output_directory, f'confusion_matrix_{timestamp}.png'))
-plot_sequence_labels(y_true.cpu().numpy()[:512], y_probabilities.cpu().numpy()[:512], save_path=os.path.join(
-    output_directory, f'linear_prediction_path_{timestamp}.png'))
+#plot_sequence_labels(y_true.cpu().numpy()[:512], y_probabilities.cpu().numpy()[:512], save_path=os.path.join(
+#    output_directory, f'linear_prediction_path_{timestamp}.png'))
