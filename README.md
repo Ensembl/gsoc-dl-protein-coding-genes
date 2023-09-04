@@ -1,4 +1,4 @@
-# Google Summer of Code-2022 : Ensembl-Repeat-Identification
+# Google Summer of Code-2023 : Ensembl-Repeat-Identification
 #### A Deep Learning repository for predicting putative gene containing regions in mammal genomes.
 
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/dwyl/esta/issues)
