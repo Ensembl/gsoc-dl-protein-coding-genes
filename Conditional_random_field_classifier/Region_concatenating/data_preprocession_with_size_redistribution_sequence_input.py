@@ -6,23 +6,22 @@ import gffutils
 from Bio import SeqIO
 
 ONE_HOT_ENCODING = {
-    'A': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'C': [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'G': [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'T': [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'N': [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'R': [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    'Y': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-    'K': [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    'M': [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    'S': [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-    'W': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-    'H': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-    'B': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    'V': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    'D': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    'A': [1, 0, 0, 0],
+    'C': [0, 1, 0, 0],
+    'G': [0, 0, 1, 0],
+    'T': [0, 0, 0, 1],
+    'N': [0.25, 0.25, 0.25, 0.25],
+    'R': [0.5, 0, 0.5, 0],
+    'Y': [0, 0.5, 0, 0.5],
+    'K': [0, 0, 0.5, 0.5],
+    'M': [0.5, 0.5, 0, 0],
+    'S': [0, 0.5, 0.5, 0],
+    'W': [0.5, 0, 0, 0.5],
+    'H':  [1/3, 1/3, 0, 1/3],
+    'B':  [0, 1/3, 1/3, 1/3],
+    'V': [1/3, 0, 1/3, 1/3],
+    'D': [1/3, 1/3, 1/3, 0]
 }
-
 
 def is_repetitive(db, start, end, sequence_len, strand, record):
     if strand == -1:
@@ -100,35 +99,36 @@ def process_fasta(fasta_file, gff_file, output_file=None, min_length=50000, max_
                 sequence_len = len(sequence_forward)
 
                 # Skip sequences shorter than min_length
-                if sequence_len < min_length:
-                    continue
+                #if sequence_len < min_length:
+                #    continue
 
                 # Process forward and reverse strand separately
                 for strand, sequence, output_file_strand in zip([1, -1], [sequence_forward, sequence_reverse], [output_file_forward, output_file_reverse]):
-                    # Split sequences longer than max_length
-                    sequences = [sequence[i: i+max_length] for i in range(0, len(sequence), max_length)]
 
                     with open(output_file_strand, 'a') as f:
-                        for seq_idx, seq in enumerate(sequences):
-                            fragments_in_record = []
-                            for i in range(0, len(seq) - fragment_size + 1, fragment_size):  # Adjusted range
-                                global_start = seq_idx * max_length  # Starting position of the sub-sequence in the original sequence
-                                start = i
-                                end = i + fragment_size
-                                fragment = seq[start:end]
-                                features = {}
-                                features["sequence"] = one_hot_encode(fragment)
-                                features['position'] = global_start + start  # Position in the original sequence
-                                features['relative_position'] = (global_start + start) / sequence_len
-                                features['strand'] = strand  # Forward strand = 1, Reverse strand = -1
-                                features['repetitive'] = is_repetitive(db, global_start + start, global_start + end, sequence_len,  strand, record.id)
-                                if classification_mode == False:
-                                    features['gene'] = is_gene(db, global_start + start, global_start + end, sequence_len, strand, record.id)
-                                if classification_mode == False:
-                                    features['exon'] = is_exon(db, global_start + start, global_start + end, sequence_len, strand, record.id)
-                                fragments_in_record.append(features)
-                            f.write(json.dumps(fragments_in_record) + '\n')
-                print( record.id)
+                        # Adjusted range
+                        for i in range(0, len(sequence) - fragment_size + 1, fragment_size):
+                            start = i
+                            end = i + fragment_size
+                            fragment = sequence[start:end]
+                            features = {}
+                            features["sequence"] = one_hot_encode(fragment)
+                            # Position in the original sequence
+                            features['position'] = start
+                            features['relative_position'] = start / \
+                                sequence_len
+                            # Forward strand = 1, Reverse strand = -1
+                            features['strand'] = strand
+                            features['repetitive'] = is_repetitive(
+                                db, start, end, sequence_len, strand, record.id)
+                            if classification_mode == False:
+                                features['gene'] = is_gene(
+                                    db, start, end, sequence_len, strand, record.id)
+                                features['exon'] = is_exon(
+                                    db, start, end, sequence_len, strand, record.id)
+                            f.write(json.dumps(features) + '\n')
+                print(record.id)
+
 
     return output_file_forward, output_file_reverse
 

@@ -1,3 +1,4 @@
+from Bio.SeqFeature import FeatureLocation, SeqFeature
 import argparse
 from Bio import SeqIO
 from data_preprocession_with_size_redistribution_sequence_input import process_fasta
@@ -93,63 +94,31 @@ class FileIterator:
 
 
 class GeneDataset(IterableDataset):
-    def __init__(self, file_paths, max_sequence_length=4000, mode='gene', shuffle=False):
+    def __init__(self, directory, max_sequence_length=4000, mode='gene', shuffle=True, undersampling=True):
         self.shuffle = shuffle
-        self.file_iterator = FileIterator(file_paths, shuffle=self.shuffle)
+        self.file_iterator = FileIterator(directory, shuffle=self.shuffle)
         self.max_sequence_length = max_sequence_length
         self.mode = mode
+        self.undersampling = undersampling
 
     def __iter__(self):
         for line, current_file in self.file_iterator:
             try:
-                data_list = json.loads(line)
-                features_sequence_list = []
-                features_general_list = []
-                mask_list = []  # List to store the mask tensors
-                positions_list = []
+                # print(line)
+                data = json.loads(line)
+                # print(data)
+                # The sequence is encoded, so the sequence features have a different dimensionality than the general features
+                features_general = None
+                features_sequence = None
 
-                for data in data_list:
-                    # The sequence is encoded, so the sequence features have a different dimensionality than the general features
-                    features_general = None
-                    features_sequence = None
-                    # convert_one_hot_to_4d needs to be done to try to reduce dimensionality of input embedding
-                    features_sequence = convert_sequence_to_4D(torch.tensor(
-                        (data["sequence"]), dtype=torch.float32))
-                    # print(features_sequence)
-                    features_general = torch.tensor([v if k not in ('repetitive') else (1-v)*10 for k, v in data.items(
-                    ) if k != 'gene' and k != 'exon' and k != 'position' and k != 'sequence'], dtype=torch.float32)
-                    position = int(data.get("position", None))
-                    if features_sequence is not None and features_general is not None:
-                        features_general_list.append(features_general)
-                        features_sequence_list.append(features_sequence)
-                        # Add a mask of 1 for the sequence
-                        mask_list.append(torch.ones(1, dtype=torch.bool))
-                        positions_list.append(torch.tensor([position]))
-                features_general_list = torch.stack(features_general_list)
-                features_sequence_list = torch.stack(features_sequence_list)
-                mask_list = torch.stack(mask_list)
-                positions_list = torch.stack(positions_list)
-                # Pad if features sequences are less than 4000 tokens long
-                if features_sequence_list.size(0) < self.max_sequence_length:
-                    pad_size = self.max_sequence_length - \
-                        features_sequence_list.size(0)
-
-                    padded_features_sequence = F.pad(
-                        features_sequence_list, (0, 0, 0, 0, 0, pad_size), 'constant', 0)
-                    padded_features_general = F.pad(
-                        features_general_list, (0, 0, 0, pad_size), 'constant', 0)
-                    # Pad the mask tensor
-                    padded_mask = F.pad(
-                        mask_list, (0, 0, 0, pad_size), 'constant', False)
-                    padded_positions = F.pad(
-                        positions_list, (0, 0, 0, pad_size), 'constant', -1)
-                else:
-                    padded_features_sequence = features_sequence_list
-                    padded_features_general = features_general_list
-                    padded_mask = mask_list
-                    padded_positions = positions_list
-                # Return the mask tensor
-                yield padded_features_sequence, padded_features_general, padded_mask, padded_positions, current_file
+                # convert_one_hot_to_4d needs to be done to try to reduce dimensionality of input embedding
+                features_sequence = torch.tensor(
+                    (data["sequence"]), dtype=torch.float32)
+                # print(features_sequence)
+                features_general = torch.tensor([v if k not in ('repetitive') else (1-v)*10 for k, v in data.items()
+                                                                  if k not in ('gene', 'exon', 'position', 'sequence')], dtype=torch.float32)
+                position = torch.tensor(data.get("position", None))
+                yield features_sequence, features_general, position, current_file
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to error: {e}")
 
@@ -164,7 +133,7 @@ class LSTMClassifier(nn.Module):
 
         # Intermediate fully connected layer
         # The input will be the concatenated outputs of LSTM and normal features
-        self.fc1 = nn.Linear(2*hidden_dim + normal_input_dim, hidden_dim)
+        self.fc1 = nn.Linear(hidden_dim*2 + normal_input_dim, hidden_dim)
 
         # Dropout layer
         self.dropout_fc1 = nn.Dropout(p=dropout_prob)
@@ -182,7 +151,6 @@ class LSTMClassifier(nn.Module):
 
         # Optionally, get the last timestep's output for each sequence
         lstm_out = lstm_out[:, -1, :]
-
         # Concatenate LSTM output and normal features
         combined_data = torch.cat((lstm_out, normal_data), dim=1)
 
@@ -204,16 +172,21 @@ def load_model(model_path):
     model.eval()
     return model
 
-def identify_optimal_regions(predictions, threshold=0.1, seed_size=5):
+
+def identify_optimal_regions(predictions, threshold=1, seed_size=1, gap_size=0):
     tags = [1 if p > threshold else 0 for p in predictions]
-    
+
     seeds = []
     for i in range(0, len(tags) - seed_size + 1):
         if (tags[i:i+seed_size].count(1) / seed_size) >= threshold:
             seeds.append(i)
 
     regions = []
+    skip_until = -1
     for seed in seeds:
+        if seed < skip_until:
+            continue
+
         start = seed
         end = seed + seed_size
         target_count = tags[start:end].count(1)
@@ -230,13 +203,31 @@ def identify_optimal_regions(predictions, threshold=0.1, seed_size=5):
             target_count += tags[end-1] == 1
 
         regions.append((start, end))
+
+        skip_until = end + gap_size
+
     return regions
+
+
+def identify_individual_regions(predictions, threshold=0.5):
+    tags = [1 if p > threshold else 0 for p in predictions]
+
+    regions = []
+    for i, tag in enumerate(tags):
+        if tag == 1:
+            regions.append((i, i + 1))
+
+    return regions
+
 
 def calculate_regions(input_fasta_file, input_gff_file, model, threshold, seed_size, fragment_size, padding):
     result_df = pd.DataFrame(columns=['Filename', 'Record_ID', 'Strand', 'Start', 'End', 'Sequence'])
     with open(input_fasta_file, 'r') as fasta_file:
         for index, record in enumerate(SeqIO.parse(fasta_file, 'fasta')):
             len_sequence = len(record.seq)
+            if len_sequence < 1_000_000:
+                #print("continued")
+                continue
             sequence = record.seq
             reverse_sequence = sequence.reverse_complement()
             temporary_fasta = f"{record.id}.fasta"
@@ -288,11 +279,11 @@ def calculate_regions(input_fasta_file, input_gff_file, model, threshold, seed_s
                 'Filename': [input_fasta_file for _ in reverse_sequences],
                 'Record_ID': [record.id for _ in reverse_sequences],
                 'Strand': ['reverse' for _ in reverse_sequences],
-                'Start': [len_sequence - start + 1 for start, end in padded_reverse_regions],
-                'End': [len_sequence - end + 1 for start, end in padded_reverse_regions],
+                'Start': [start+1 for start, end in padded_reverse_regions],
+                'End': [end+1 for start, end in padded_reverse_regions],
                 'Sequence': [str(seq) for seq in reverse_sequences],
             })
-
+            print(df_forward, df_reverse)
             result_df = pd.concat([result_df, df_forward, df_reverse], ignore_index=True)
     return result_df
 
@@ -304,51 +295,69 @@ def get_model_predictions_and_labels(model, dataloader, threshold=0.5):
     rows = []
     torch.cuda.empty_cache()
     with torch.no_grad():
-        for seq_data, normal_data,mask, positions, sequence_names in dataloader:
-            print("Still living")
-            seq_data, normal_data = seq_data.to(
-                device), normal_data.to(device)
-            seq_data = seq_data.view(-1, seq_data.size(2), seq_data.size(3))
-            normal_data = normal_data.view(-1, normal_data.size(2))
+        for seq_data, normal_data,positions, sequence_name in dataloader:
+            # print("Still living")
+            seq_data, normal_data,positions = seq_data.to(
+                device), normal_data.to(device), positions.to(device)
+            # print(f"Size of seq_data: {tensor_size_in_MB(seq_data):.2f} MB")
+            # print(f"Size of normal_data: {tensor_size_in_MB(normal_data):.2f} MB")
 
-            mask = mask.view(-1, 1)
+            outputs = model(seq_data, normal_data).flatten()
+            # print(prof.key_averages().table(sort_by="cuda_time_total"))
 
-            mask = mask.squeeze(-1).to(device).flatten()
-            print(f"Size of seq_data: {tensor_size_in_MB(seq_data):.2f} MB")
-            print(
-                f"Size of normal_data: {tensor_size_in_MB(normal_data):.2f} MB")
-            with profiler.profile(use_cuda=True) as prof:
-                with profiler.record_function("model_inference"):
-                    outputs = model(seq_data, normal_data).flatten()
-            print(prof.key_averages().table(sort_by="cuda_time_total"))
             predicted_labels = (outputs > threshold).float()
-            y_pred.extend(predicted_labels[mask].tolist())
-            valid_positions = positions[mask].tolist()
-            valid_sequence_names = sequence_names[mask].tolist()
-            valid_predicted_scores = outputs[mask].tolist()
-            torch.cuda.empty_cache()
+            #print(outputs)
 
+            y_pred.extend(predicted_labels.tolist())
+            valid_positions = positions.tolist()
+            valid_predicted_scores = outputs.tolist()
+            for pos, score in zip(valid_positions, valid_predicted_scores):
+                rows.append((sequence_name, pos, score))
+            torch.cuda.empty_cache()
+        print("Finally done")
     return y_pred
+
 
 def get_genbank_record(result_df, input_fasta_file):
     new_records = []
     for record in SeqIO.parse(input_fasta_file, 'fasta'):
         new_record = SeqRecord(record.seq, id=record.id)
+
+        # Set molecule_type and other necessary annotations
+        new_record.annotations["molecule_type"] = "DNA"
+
         for index, row in result_df.iterrows():
             if row['Record_ID'] == record.id:
-                # Define the location of the feature
+                strand_val = +1 if row['Strand'] == 'forward' else -1
                 location = FeatureLocation(
-                    start=row['Start']-1, end=row['End'])
-
-                # Create a new feature with the location and strand
+                    start=row['Start']-1, end=row['End'], strand=strand_val)
                 feature = SeqFeature(
-                    location=location, strand=row['Strand'], type="Probable genetic region")
-
-                # Create a SeqRecord object and append the feature to it
-
+                    location=location, type="Probable genetic region")
                 new_record.features.append(feature)
         new_records.append(new_record)
     return new_records
+
+
+
+
+def save_as_gff(new_records, output_gff_file):
+    """
+    Save the records with the probable regions in a GFF file.
+    :param new_records: List of SeqRecord objects containing the predicted features.
+    :param output_gff_file: Path to save the GFF file.
+    """
+    with open(output_gff_file, 'w') as gff_out:
+        for record in new_records:
+            for feature in record.features:
+                # GFF format: seqid source type start end score strand phase attributes
+                # Here, we'll leave out some of these details and focus on the basics
+
+                # Constructing the attributes string based on the type of feature
+                attributes = f"ID={feature.type};Name={feature.type}"
+
+                gff_line = f"{record.id}\t.\t{feature.type}\t{feature.location.start + 1}\t{feature.location.end}\t.\t{'+' if feature.strand == 1 else '-'}\t.\t{attributes}\n"
+                gff_out.write(gff_line)
+
 
 def tensor_size_in_MB(tensor):
     return tensor.element_size() * tensor.nelement() / (1024 * 1024)
@@ -357,12 +366,14 @@ def main(args):
     model = load_model(args.model_path)
     result_df = calculate_regions(
         args.input_fasta_file, args.input_gff_file, model, args.threshold, args.seed_size, args.fragment_size, args.padding)
-    output_filename = os.path.splitext(args.input_file)[0] + "_output.csv"
+    output_filename = os.path.splitext(args.input_fasta_file)[
+        0] + "_output.csv"
     # Save the DataFrame as a CSV file
     result_df.to_csv(os.path.join(
         args.output_directory, f'{args.input_fasta_file}_regions.csv'), index=False)
     genbank_records = get_genbank_record(
         result_df, args.input_fasta_file)
+    save_as_gff(genbank_records, f'{args.input_fasta_file}_regions.gff')
     SeqIO.write(genbank_records, os.path.join(
         args.output_directory, f'{args.input_fasta_file}_regions.gbk'), "genbank")
     print(f"Results saved to {output_filename}")
@@ -380,7 +391,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--threshold", type=float, default=0.75, help="Threshold for identifying optimal regions.")
     parser.add_argument("--seed_size", type=int, default=100, help="Seed size for identifying regions.")
-    parser.add_argument("--fragment_size", type=int, default=100, help="Fragment size.")
+    parser.add_argument("--fragment_size", type=int, default=250, help="Fragment size.")
     parser.add_argument("--padding", type=int, default=1500, help="padding value for regions.")
     
     args = parser.parse_args()
